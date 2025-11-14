@@ -25,7 +25,7 @@ export const createWaypoint = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -63,7 +63,7 @@ export const getMyWaypoints = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {

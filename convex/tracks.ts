@@ -19,7 +19,7 @@ export const startTrack = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -174,7 +174,7 @@ export const getMyTracks = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -199,7 +199,7 @@ export const getActiveTrack = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {

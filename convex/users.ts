@@ -90,7 +90,7 @@ export const updateCurrentUser = mutation({
     // Look up user by email (JWT subject is not a Convex document ID)
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
+      .withIndex("email", (q) => q.eq("email", email))
       .unique();
 
     if (existingUser !== null) {
@@ -162,7 +162,7 @@ export const getCurrentUser = query({
     if (identity.email) {
       const user = await ctx.db
         .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email!))
+        .withIndex("email", (q) => q.eq("email", identity.email!))
         .unique();
 
       if (user?.accountAccessRestricted) {
@@ -215,7 +215,7 @@ export const addMemberNumbersToExistingUsers = mutation({
     // Look up user by email (JWT subject is not a Convex document ID)
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .withIndex("email", (q) => q.eq("email", identity.email!))
       .unique();
 
     if (!currentUser || currentUser.role !== "owner") {

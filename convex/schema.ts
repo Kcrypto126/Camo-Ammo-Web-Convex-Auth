@@ -11,81 +11,92 @@ export default defineSchema({
     phoneNumber: v.optional(v.string()),
     avatar: v.optional(v.string()),
     image: v.optional(v.string()), // Deprecated: Use 'avatar' instead. Will be removed after migration.
-    
+    picture: v.optional(v.string()),
+
     // Profile completion tracking
     profileCompleted: v.optional(v.boolean()),
-    
+
     // Address fields
     country: v.optional(v.string()),
     streetAddress: v.optional(v.string()),
     city: v.optional(v.string()),
     state: v.optional(v.string()),
     zipCode: v.optional(v.string()),
-    
+
     // Emergency contacts (optional)
-    emergencyContact1: v.optional(v.object({
-      name: v.string(),
-      phone: v.string(),
-      relationship: v.string(),
-    })),
-    emergencyContact2: v.optional(v.object({
-      name: v.string(),
-      phone: v.string(),
-      relationship: v.string(),
-    })),
-    emergencyContact3: v.optional(v.object({
-      name: v.string(),
-      phone: v.string(),
-      relationship: v.string(),
-    })),
-    
+    emergencyContact1: v.optional(
+      v.object({
+        name: v.string(),
+        phone: v.string(),
+        relationship: v.string(),
+      }),
+    ),
+    emergencyContact2: v.optional(
+      v.object({
+        name: v.string(),
+        phone: v.string(),
+        relationship: v.string(),
+      }),
+    ),
+    emergencyContact3: v.optional(
+      v.object({
+        name: v.string(),
+        phone: v.string(),
+        relationship: v.string(),
+      }),
+    ),
+
     // Hunting preferences (multi-select)
     huntingPreferences: v.optional(v.array(v.string())), // deer, elk, turkey, waterfowl, small game, predator
-    
+
     // Weapon types (multi-select)
     weaponTypes: v.optional(v.array(v.string())), // rifle, bow, shotgun, muzzle loader
-    
+
     // Special events interest
     interestedInSpecialEvents: v.optional(v.boolean()),
-    
+
     // Public profile fields
     bio: v.optional(v.string()),
     profilePhotos: v.optional(v.array(v.string())), // Array of photo URLs
     yearsOfExperience: v.optional(v.number()),
     favoriteSpecies: v.optional(v.string()),
     hobbies: v.optional(v.array(v.string())), // Other hobbies beyond hunting
-    
+
     // Member identification
     memberNumber: v.optional(v.string()), // Unique member number (e.g., "M-00001")
-    
+
     // Roles and permissions
-    role: v.optional(v.union(v.literal("owner"), v.literal("admin"), v.literal("member"))),
+    role: v.optional(
+      v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+    ),
     permissions: v.optional(v.array(v.string())),
-    
+
     // Account status
-    accountStatus: v.optional(v.union(v.literal("active"), v.literal("hold"), v.literal("banned"))),
+    accountStatus: v.optional(
+      v.union(v.literal("active"), v.literal("hold"), v.literal("banned")),
+    ),
     accountAccessRestricted: v.optional(v.boolean()), // When true, user cannot sign in
     archived: v.optional(v.boolean()),
     archivedAt: v.optional(v.number()),
     archivedBy: v.optional(v.id("users")),
-    
+
     // Email and phone verification timestamps
     emailVerificationTime: v.optional(v.number()), // Timestamp when email was verified
     phoneVerificationTime: v.optional(v.number()), // Timestamp when phone was verified
-    
+
     // Forum moderation - warning and ban tracking
     forumWarningCount: v.optional(v.number()), // Total warnings received
     forumBanExpiresAt: v.optional(v.number()), // When current ban expires (null = not banned)
     forumBanReason: v.optional(v.string()), // Reason for current ban
-    
+
     // Legacy admin fields (deprecated, use role/permissions instead)
     isAdmin: v.optional(v.boolean()),
     adminPermissions: v.optional(v.array(v.string())),
   })
-    .index("by_admin", ["isAdmin"])
-    .index("by_username", ["username"])
-    .index("by_phone", ["phoneNumber"])
-    .index("by_email", ["email"]),
+    .index("admin", ["isAdmin"])
+    .index("username", ["username"])
+    .index("phone", ["phoneNumber"])
+    .index("email", ["email"]),
 
   adminNotes: defineTable({
     userId: v.id("users"), // The user the note is about
@@ -146,28 +157,28 @@ export default defineSchema({
     address: v.optional(v.string()),
     county: v.string(),
     state: v.string(),
-    
+
     // Ownership info
     ownerName: v.string(),
     ownerAddress: v.optional(v.string()),
     ownerPhone: v.optional(v.string()),
     ownerEmail: v.optional(v.string()),
-    
+
     // Property details
     acreage: v.number(),
     propertyType: v.string(), // "public", "private", "state", "federal"
     landUse: v.optional(v.string()),
-    
+
     // Boundary data (GeoJSON polygon coordinates)
     boundaries: v.object({
       type: v.literal("Polygon"),
       coordinates: v.array(v.array(v.array(v.number()))),
     }),
-    
+
     // Center point for quick map queries
     centerLat: v.number(),
     centerLng: v.number(),
-    
+
     // Metadata
     verified: v.boolean(),
     lastUpdated: v.optional(v.number()),
@@ -184,16 +195,16 @@ export default defineSchema({
     state: v.string(),
     description: v.optional(v.string()),
     regulations: v.optional(v.string()),
-    
+
     // Boundary data
     boundaries: v.object({
       type: v.literal("Polygon"),
       coordinates: v.array(v.array(v.array(v.number()))),
     }),
-    
+
     centerLat: v.number(),
     centerLng: v.number(),
-    
+
     // Hunting info
     allowsHunting: v.boolean(),
     seasonDates: v.optional(v.string()),
@@ -207,7 +218,7 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     description: v.optional(v.string()),
-    
+
     // Track statistics
     distance: v.number(), // in meters
     duration: v.number(), // in seconds
@@ -215,7 +226,7 @@ export default defineSchema({
     elevationLoss: v.optional(v.number()),
     averageSpeed: v.optional(v.number()),
     maxSpeed: v.optional(v.number()),
-    
+
     // Track data (array of coordinates)
     coordinates: v.array(
       v.object({
@@ -224,13 +235,13 @@ export default defineSchema({
         timestamp: v.number(),
         altitude: v.optional(v.number()),
         accuracy: v.optional(v.number()),
-      })
+      }),
     ),
-    
+
     // Timestamps
     startTime: v.number(),
     endTime: v.number(),
-    
+
     // Status
     isActive: v.boolean(),
   })
@@ -242,21 +253,21 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     description: v.optional(v.string()),
-    
+
     // Location
     lat: v.number(),
     lng: v.number(),
     altitude: v.optional(v.number()),
-    
+
     // Category/Type
     type: v.string(), // "stand", "blind", "camera", "marker", "parking", "camp", etc.
     icon: v.optional(v.string()),
     color: v.optional(v.string()),
-    
+
     // Optional associations
     trackId: v.optional(v.id("tracks")),
     photos: v.optional(v.array(v.string())),
-    
+
     // Timestamps
     createdAt: v.number(),
   })
@@ -293,12 +304,12 @@ export default defineSchema({
     heading: v.optional(v.number()),
     speed: v.optional(v.number()),
     altitude: v.optional(v.number()),
-    
+
     // Sharing settings
     isActive: v.boolean(),
     shareWith: v.string(), // "all_friends", "selected_friends", "none"
     selectedFriends: v.optional(v.array(v.id("users"))),
-    
+
     // Timestamps
     lastUpdated: v.number(),
     expiresAt: v.optional(v.number()), // optional auto-expire time
@@ -310,26 +321,26 @@ export default defineSchema({
     creatorId: v.id("users"),
     title: v.string(),
     description: v.optional(v.string()),
-    
+
     // Location details
     locationName: v.string(),
     lat: v.number(),
     lng: v.number(),
     state: v.optional(v.string()),
-    
+
     // Trip details
     activityType: v.string(), // "scouting", "hunting", "camping", "hiking"
     gameType: v.optional(v.string()), // "deer", "turkey", "elk", "waterfowl", etc.
     startDate: v.number(),
     endDate: v.number(),
-    
+
     // Privacy and limits
     privacy: v.string(), // "public", "friends_only", "private"
     maxParticipants: v.optional(v.number()),
-    
+
     // Status
     status: v.string(), // "upcoming", "in_progress", "completed", "cancelled"
-    
+
     // Timestamps
     createdAt: v.number(),
   })
@@ -354,12 +365,12 @@ export default defineSchema({
   landLeases: defineTable({
     ownerId: v.id("users"),
     propertyId: v.optional(v.id("properties")), // optional link to properties table
-    
+
     // Property details
     title: v.optional(v.string()),
     description: v.string(),
     acreage: v.number(),
-    
+
     // Address details
     country: v.string(),
     region: v.optional(v.string()),
@@ -370,68 +381,70 @@ export default defineSchema({
     county: v.string(),
     zipCode: v.string(),
     address: v.optional(v.string()), // legacy field
-    
+
     // Location
     lat: v.number(),
     lng: v.number(),
-    boundaries: v.optional(v.object({
-      type: v.literal("Polygon"),
-      coordinates: v.array(v.array(v.array(v.number()))),
-    })),
-    
+    boundaries: v.optional(
+      v.object({
+        type: v.literal("Polygon"),
+        coordinates: v.array(v.array(v.array(v.number()))),
+      }),
+    ),
+
     // Land types
     landTypes: v.array(v.string()), // "pasture", "cropland", "forest", "wetlands", "rivers_streams", "coastal", "desert", "mountains"
-    
+
     // Lease terms and pricing
     price: v.number(),
     priceType: v.string(), // "per_year", "per_day", "per_week", "per_month", "per_season", "per_person"
     isPriceNegotiable: v.boolean(),
-    
+
     // Legacy pricing fields (for backward compatibility)
     pricePerYear: v.optional(v.number()),
     pricePerSeason: v.optional(v.number()),
     pricePerDay: v.optional(v.number()),
     leaseTerm: v.optional(v.string()), // "annual", "seasonal", "daily"
     minLeaseDays: v.optional(v.number()),
-    
+
     // Dates
     availableFrom: v.optional(v.number()),
     availableTo: v.optional(v.number()),
-    
+
     // Hunting details
     availableHunting: v.array(v.string()), // "big_game", "lease_game", "small_game_furbearer", "trapping", "upland_bird", "waterfowl"
     huntingPartySize: v.number(), // Number of hunters allowed
-    
+
     // Legacy hunting fields (for backward compatibility)
     allowedActivities: v.optional(v.array(v.string())),
     gameTypes: v.optional(v.array(v.string())),
     maxHunters: v.optional(v.number()),
-    
+
     // Amenities and features
     amenities: v.array(v.string()), // "cabin", "deerstands", "duck_blinds", "camp_site", "electricity_hookup", "pond", "food_plots", "atv_access"
     terrain: v.optional(v.string()), // "hardwoods", "pines", "mixed", "open_fields", "bottomland"
     waterSources: v.optional(v.array(v.string())), // "pond", "creek", "river", "lake"
-    
+
     // Rules and restrictions
     rules: v.optional(v.string()),
     exclusiveAccess: v.optional(v.boolean()), // true = only one lease at a time
-    
+
     // Contact
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
-    
+
     // Images
     photos: v.optional(v.array(v.string())),
-    
+
     // Status and metadata
     status: v.string(), // "pending", "approved", "rejected", "leased", "inactive"
     views: v.number(),
-    
+
     // Approval info
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     rejectionReason: v.optional(v.string()),
-    
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -446,20 +459,20 @@ export default defineSchema({
     leaseId: v.id("landLeases"),
     fromUserId: v.id("users"),
     toUserId: v.id("users"), // lease owner
-    
+
     message: v.string(),
     contactInfo: v.optional(v.string()),
-    
+
     // Inquiry details
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     numberOfHunters: v.optional(v.number()),
-    
+
     status: v.string(), // "pending", "responded", "accepted", "declined"
-    
+
     response: v.optional(v.string()),
     respondedAt: v.optional(v.number()),
-    
+
     createdAt: v.number(),
   })
     .index("by_lease", ["leaseId"])
@@ -470,19 +483,19 @@ export default defineSchema({
 
   hunts: defineTable({
     userId: v.id("users"),
-    
+
     // Basic hunt info
     title: v.string(),
     date: v.number(),
     startTime: v.number(),
     endTime: v.optional(v.number()),
-    
+
     // Location
     locationName: v.string(),
     lat: v.number(),
     lng: v.number(),
     state: v.optional(v.string()),
-    
+
     // Hunt details
     species: v.string(), // "deer", "turkey", "elk", "duck", "goose", "rabbit", etc.
     method: v.optional(v.string()), // "rifle", "bow", "shotgun", "muzzleloader"
@@ -490,34 +503,38 @@ export default defineSchema({
     temperature: v.optional(v.number()),
     windSpeed: v.optional(v.number()),
     windDirection: v.optional(v.string()),
-    
+
     // Hunt results
     status: v.string(), // "active", "completed", "unsuccessful"
     successful: v.boolean(),
     harvested: v.optional(v.number()), // number of animals harvested
-    
+
     // Harvest details (if successful)
-    harvestDetails: v.optional(v.array(v.object({
-      species: v.string(),
-      sex: v.optional(v.string()), // "male", "female", "unknown"
-      age: v.optional(v.string()), // "juvenile", "adult", "mature"
-      weight: v.optional(v.number()),
-      points: v.optional(v.number()), // for antlered game
-      time: v.number(),
-      notes: v.optional(v.string()),
-    }))),
-    
+    harvestDetails: v.optional(
+      v.array(
+        v.object({
+          species: v.string(),
+          sex: v.optional(v.string()), // "male", "female", "unknown"
+          age: v.optional(v.string()), // "juvenile", "adult", "mature"
+          weight: v.optional(v.number()),
+          points: v.optional(v.number()), // for antlered game
+          time: v.number(),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+
     // Photos
     photos: v.optional(v.array(v.string())),
-    
+
     // Notes and observations
     notes: v.optional(v.string()),
     wildlifeSeen: v.optional(v.array(v.string())),
-    
+
     // Linked data
     trackId: v.optional(v.id("tracks")),
     propertyId: v.optional(v.id("properties")),
-    
+
     // Metadata
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -534,34 +551,41 @@ export default defineSchema({
     title: v.string(),
     content: v.string(),
     category: v.optional(v.string()), // "general", "tips", "stories", "gear", "spots"
-    
+
     // Location
     state: v.optional(v.string()), // US state (optional for backward compatibility)
     city: v.optional(v.string()), // City name (optional for backward compatibility)
-    
+
     // Engagement
     likeCount: v.number(),
     commentCount: v.number(),
     viewCount: v.number(),
-    
+
     // Images
     images: v.optional(v.array(v.string())),
-    
+
     // Status
     isActive: v.boolean(),
-    
+
     // Moderation fields
-    status: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected"), v.literal("hidden"))),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+        v.literal("hidden"),
+      ),
+    ),
     isLocked: v.optional(v.boolean()), // Locked posts cannot be deleted by creator
     rejectionReason: v.optional(v.string()),
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
-    
+
     // Warning tracking
     hasWarning: v.optional(v.boolean()), // If this post received a warning
     warningIssuedBy: v.optional(v.id("users")), // Admin who issued warning
     warningIssuedAt: v.optional(v.number()), // When warning was issued
-    
+
     // Timestamps
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -578,18 +602,18 @@ export default defineSchema({
     postId: v.id("forumPosts"),
     authorId: v.id("users"),
     content: v.string(),
-    
+
     // Engagement
     likeCount: v.number(),
-    
+
     // Parent comment for nested replies
     parentCommentId: v.optional(v.id("forumComments")),
-    
+
     // Warning tracking
     hasWarning: v.optional(v.boolean()), // If this comment received a warning
     warningIssuedBy: v.optional(v.id("users")), // Admin who issued warning
     warningIssuedAt: v.optional(v.number()), // When warning was issued
-    
+
     // Timestamps
     createdAt: v.number(),
   })
@@ -612,37 +636,37 @@ export default defineSchema({
 
   vehicleRecoveryRequests: defineTable({
     userId: v.id("users"),
-    
+
     // Request details
     serviceNeeded: v.string(),
     description: v.optional(v.string()),
     phoneNumber: v.string(),
-    
+
     // Location
     lat: v.number(),
     lng: v.number(),
     locationName: v.optional(v.string()),
-    
+
     // Images
     photos: v.optional(v.array(v.string())),
-    
+
     // Status
     status: v.string(), // "active", "resolved", "cancelled"
     requestStatus: v.optional(v.string()), // "still_waiting", "in_progress" - member's update
-    
+
     // Engagement
     commentCount: v.number(),
-    
+
     // Follow-up tracking
     lastFollowUpAt: v.optional(v.number()), // When last follow-up was sent
     nextFollowUpAt: v.optional(v.number()), // When next follow-up should be sent
-    
+
     // Close tracking
     closedAt: v.optional(v.number()),
     closedBy: v.optional(v.id("users")),
     reopenedAt: v.optional(v.number()),
     reopenedBy: v.optional(v.id("users")),
-    
+
     // Timestamps
     createdAt: v.number(),
     resolvedAt: v.optional(v.number()),
@@ -665,40 +689,40 @@ export default defineSchema({
 
   deerRecoveryRequests: defineTable({
     userId: v.id("users"),
-    
+
     // Request details
     notes: v.string(), // What do they need help with
     phoneNumber: v.string(),
-    
+
     // Location
     lat: v.number(),
     lng: v.number(),
     locationName: v.optional(v.string()),
-    
+
     // Deer details
     shotPlacement: v.optional(v.string()), // "quartered_away", "quartering_to", "broadside"
     yardsFromHit: v.optional(v.string()), // How many yards walked from hit site
-    
+
     // Photos of blood trail
     photos: v.optional(v.array(v.string())),
-    
+
     // Status
     status: v.string(), // "active", "resolved", "cancelled"
     requestStatus: v.optional(v.string()), // "still_waiting", "in_progress" - member's update
-    
+
     // Engagement
     commentCount: v.number(),
-    
+
     // Follow-up tracking
     lastFollowUpAt: v.optional(v.number()), // When last follow-up was sent
     nextFollowUpAt: v.optional(v.number()), // When next follow-up should be sent
-    
+
     // Close tracking
     closedAt: v.optional(v.number()),
     closedBy: v.optional(v.id("users")),
     reopenedAt: v.optional(v.number()),
     reopenedBy: v.optional(v.id("users")),
-    
+
     // Timestamps
     createdAt: v.number(),
     resolvedAt: v.optional(v.number()),
@@ -726,10 +750,14 @@ export default defineSchema({
       v.literal("spam"),
       v.literal("hate_speech"),
       v.literal("violence"),
-      v.literal("harassment")
+      v.literal("harassment"),
     ),
     description: v.optional(v.string()),
-    status: v.union(v.literal("pending"), v.literal("reviewed"), v.literal("dismissed")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("reviewed"),
+      v.literal("dismissed"),
+    ),
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -756,14 +784,19 @@ export default defineSchema({
     subject: v.string(),
     message: v.string(),
     category: v.string(), // "technical", "account", "billing", "other"
-    status: v.union(v.literal("open"), v.literal("in_progress"), v.literal("resolved"), v.literal("closed")),
+    status: v.union(
+      v.literal("open"),
+      v.literal("in_progress"),
+      v.literal("resolved"),
+      v.literal("closed"),
+    ),
     priority: v.optional(v.string()), // "low", "medium", "high"
-    
+
     // Admin response
     adminResponse: v.optional(v.string()),
     respondedBy: v.optional(v.id("users")),
     respondedAt: v.optional(v.number()),
-    
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -777,11 +810,15 @@ export default defineSchema({
     ticketId: v.id("supportTickets"),
     userId: v.id("users"), // Who sent the reply (admin or member)
     message: v.string(),
-    attachments: v.optional(v.array(v.object({
-      storageId: v.id("_storage"),
-      fileName: v.string(),
-      fileSize: v.number(),
-    }))),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          fileName: v.string(),
+          fileSize: v.number(),
+        }),
+      ),
+    ),
     isAdminReply: v.boolean(), // true if from admin, false if from member
     createdAt: v.number(),
   })

@@ -16,7 +16,7 @@ export const getPosts = query({
     if (identity) {
       const user = await ctx.db
         .query("users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email))
+        .withIndex("email", (q) => q.eq("email", identity.email))
         .unique();
 
       isAdmin = user?.role === "owner" || user?.role === "admin";
@@ -169,7 +169,7 @@ export const createPost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -227,7 +227,7 @@ export const addComment = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -281,7 +281,7 @@ export const toggleLikePost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -340,7 +340,7 @@ export const hasLikedPost = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -372,7 +372,7 @@ export const deletePost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -428,7 +428,7 @@ export const getPendingPosts = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -478,7 +478,7 @@ export const approvePost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -534,7 +534,7 @@ export const rejectPost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -588,7 +588,7 @@ export const hidePost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -622,7 +622,7 @@ export const lockPost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -663,7 +663,7 @@ export const reportPost = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -700,7 +700,7 @@ export const getReportedPosts = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -764,7 +764,7 @@ export const dismissReport = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -795,7 +795,7 @@ export const getMyNotifications = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -846,7 +846,7 @@ export const getUserForumActivity = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -904,7 +904,7 @@ export const getMyForumBanStatus = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -939,7 +939,7 @@ export const warnPost = mutation({
 
     const admin = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {
@@ -1047,7 +1047,7 @@ export const warnComment = mutation({
 
     const admin = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {
@@ -1159,7 +1159,7 @@ export const removeForumBan = mutation({
 
     const admin = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {

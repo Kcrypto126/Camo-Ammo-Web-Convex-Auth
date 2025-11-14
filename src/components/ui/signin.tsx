@@ -77,23 +77,31 @@ function SignInDialog({
     }
   }, [signIn, onOpenChange]);
 
+  // Removed all verification-related fields, state, and logic
+
   const handleEmailAuth = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       setIsLoading(true);
       try {
+        console.log("[SignIn] Attempting password auth", {
+          email,
+          isSignUp,
+        });
         await signIn("password", {
           email,
           password,
-          ...(isSignUp && { name, flow: "signUp" }),
+          flow: isSignUp ? "signUp" : "signIn",
+          ...(isSignUp && { name }),
         });
+        // On success for both sign up and sign in, close dialog and notify
         onOpenChange(false);
-        toast.success(isSignUp ? "Account created!" : "Signed in!");
-      } catch (error) {
+        toast.success(isSignUp ? "Account created and signed in!" : "Signed in!");
+      } catch (error: any) {
+        console.error("[SignIn] Auth error", error);
         toast.error(
-          isSignUp ? "Failed to create account" : "Failed to sign in",
+          isSignUp ? "Failed to create account" : "Failed to sign in"
         );
-        console.error(error);
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +134,7 @@ function SignInDialog({
             <Button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full"
+              className="w-full hover:text-white"
               variant="outline"
             >
               {isLoading ? (
@@ -159,7 +167,7 @@ function SignInDialog({
                 setIsSignUp(false);
               }}
               disabled={isLoading}
-              className="w-full"
+              className="w-full hover:text-white"
               variant="outline"
             >
               Continue with Email
@@ -205,7 +213,7 @@ function SignInDialog({
                 disabled={isLoading}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col items-center">
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -217,8 +225,7 @@ function SignInDialog({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
-                className="w-full"
+                className="bg-transparent hover:bg-transparent text-white"
                 onClick={() => setIsSignUp(!isSignUp)}
                 disabled={isLoading}
               >
@@ -228,8 +235,7 @@ function SignInDialog({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
-                className="w-full"
+                className="bg-transparent hover:bg-transparent text-white"
                 onClick={() => setStep("choose")}
                 disabled={isLoading}
               >
