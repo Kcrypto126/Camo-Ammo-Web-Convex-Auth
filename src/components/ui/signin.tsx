@@ -96,11 +96,13 @@ function SignInDialog({
         });
         // On success for both sign up and sign in, close dialog and notify
         onOpenChange(false);
-        toast.success(isSignUp ? "Account created and signed in!" : "Signed in!");
+        toast.success(
+          isSignUp ? "Account created and signed in!" : "Signed in!",
+        );
       } catch (error: any) {
         console.error("[SignIn] Auth error", error);
         toast.error(
-          isSignUp ? "Failed to create account" : "Failed to sign in"
+          isSignUp ? "Failed to create account" : "Failed to sign in",
         );
       } finally {
         setIsLoading(false);
@@ -130,7 +132,7 @@ function SignInDialog({
         </DialogHeader>
 
         {step === "choose" ? (
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 pt-3">
             <Button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
@@ -321,7 +323,7 @@ export const SignInButton = forwardRef<HTMLButtonElement, SignInButtonProps>(
           disabled={isDisabled}
           variant={variant}
           size={size}
-          className={className}
+          className={`${className} ${showSignInDialog ? "hidden" : ""}`}
           asChild={asChild}
           aria-label={
             isAuthenticated

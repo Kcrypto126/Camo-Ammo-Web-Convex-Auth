@@ -12,7 +12,6 @@ import type * as _helpers from "../_helpers.js";
 import type * as activeViewers from "../activeViewers.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
-import type * as authent from "../authent.js";
 import type * as deerRecovery from "../deerRecovery.js";
 import type * as errors from "../errors.js";
 import type * as forums from "../forums.js";
@@ -49,7 +48,6 @@ declare const fullApi: ApiFromModules<{
   activeViewers: typeof activeViewers;
   audit: typeof audit;
   auth: typeof auth;
-  authent: typeof authent;
   deerRecovery: typeof deerRecovery;
   errors: typeof errors;
   forums: typeof forums;

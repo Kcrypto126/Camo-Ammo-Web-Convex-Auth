@@ -10,7 +10,26 @@ import type { DataModel } from "./_generated/dataModel.js";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Google,
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Ensure we request email scope
+      authorization: {
+        params: {
+          scope: "openid email profile",
+        },
+      },
+      // Explicitly map profile fields to ensure email is included
+      profile(profile) {
+        return {
+          id: profile.sub,
+          email: profile.email,
+          name: profile.name,
+          picture: profile.picture,
+          emailVerified: profile.email_verified ?? true,
+        };
+      },
+    }),
     Resend({
       from: process.env.AUTH_EMAIL ?? "My App <onboarding@resend.dev>",
     }),
