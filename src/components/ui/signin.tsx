@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useState } from "react";
 import { type VariantProps } from "class-variance-authority";
 import { Loader2, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { CodeInput } from "@/components/ui/CodeInput.tsx";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { Button, buttonVariants } from "@/components/ui/button.tsx";
@@ -57,12 +58,17 @@ function SignInDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { signIn } = useAuthActions();
-  const [step, setStep] = useState<"choose" | "email">("choose");
+  const [step, setStep] = useState<"choose" | "email" | "code">("choose");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // const [step, setStep] = useState<"signIn" | { email: string } | "forgot">(
+  //   "signIn",
+  // );
+  const [submitting, setSubmitting] = useState(false);
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
@@ -83,27 +89,24 @@ function SignInDialog({
     async (e: React.FormEvent) => {
       e.preventDefault();
       setIsLoading(true);
+
       try {
         console.log("[SignIn] Attempting password auth", {
           email,
           isSignUp,
         });
-        await signIn("password", {
+
+        await signIn("password-code", {
           email,
           password,
           flow: isSignUp ? "signUp" : "signIn",
           ...(isSignUp && { name }),
         });
-        // On success for both sign up and sign in, close dialog and notify
-        onOpenChange(false);
-        toast.success(
-          isSignUp ? "Account created and signed in!" : "Signed in!",
-        );
-      } catch (error: any) {
-        console.error("[SignIn] Auth error", error);
-        toast.error(
-          isSignUp ? "Failed to create account" : "Failed to sign in",
-        );
+        toast.success("Email sent successfully");
+        setStep("code");
+      } catch (error) {
+        console.error(error);
+        toast.error("Invalid email or password");
       } finally {
         setIsLoading(false);
       }
@@ -118,16 +121,20 @@ function SignInDialog({
           <DialogTitle>
             {step === "choose"
               ? "Sign In"
-              : isSignUp
-                ? "Create Account"
-                : "Sign In"}
+              : step === "code"
+                ? "Check your email"
+                : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
           </DialogTitle>
           <DialogDescription>
             {step === "choose"
               ? "Choose how you'd like to sign in"
-              : isSignUp
-                ? "Create a new account with email"
-                : "Sign in with your email"}
+              : step === "code"
+                ? "Enter the 8-digit code we sent to your email address"
+                : isSignUp
+                  ? "Create a new account with email"
+                  : "Sign in with your email"}
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +182,7 @@ function SignInDialog({
               Continue with Email
             </Button>
           </div>
-        ) : (
+        ) : step === "email" ? (
           <form onSubmit={handleEmailAuth} className="space-y-4">
             {isSignUp && (
               <div className="space-y-2">
@@ -227,7 +234,7 @@ function SignInDialog({
               </Button>
               <Button
                 type="button"
-                className="bg-transparent hover:bg-transparent text-white"
+                className="bg-transparent mt-2 hover:bg-transparent text-white"
                 onClick={() => setIsSignUp(!isSignUp)}
                 disabled={isLoading}
               >
@@ -237,7 +244,7 @@ function SignInDialog({
               </Button>
               <Button
                 type="button"
-                className="bg-transparent hover:bg-transparent text-white"
+                className="bg-transparent -mt-2 hover:bg-transparent text-white"
                 onClick={() => setStep("choose")}
                 disabled={isLoading}
               >
@@ -245,6 +252,47 @@ function SignInDialog({
               </Button>
             </div>
           </form>
+        ) : (
+          <>
+            <form
+              className="flex flex-col"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setSubmitting(true);
+                try {
+                  const formData = new FormData(event.currentTarget);
+                  const code = formData.get("code") as string;
+                  await signIn("password-code", {
+                    email,
+                    code,
+                    flow: "email-verification",
+                  });
+                  toast.success("Code verified successfully");
+                  onOpenChange(false);
+                } catch (error) {
+                  console.error(error);
+                  toast.error("Code could not be verified, try again");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              <label htmlFor="code">Code</label>
+              <CodeInput />
+              <input name="email" value={email} type="hidden" />
+              <Button type="submit" disabled={submitting}>
+                Continue
+              </Button>
+              <Button
+                type="button"
+                className="bg-transparent mt-3 hover:bg-transparent text-white"
+                onClick={() => setStep("choose")}
+                disabled={isLoading}
+              >
+                Back
+              </Button>
+            </form>
+          </>
         )}
       </DialogContent>
     </Dialog>
