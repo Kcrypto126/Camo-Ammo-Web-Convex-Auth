@@ -20,7 +20,7 @@ export const createTicket = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -58,7 +58,7 @@ export const getMyTickets = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -101,7 +101,7 @@ export const getAllTickets = query({
 
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (
@@ -160,7 +160,7 @@ export const getUserTickets = query({
 
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (
@@ -206,7 +206,7 @@ export const updateTicketStatus = mutation({
 
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (
@@ -294,7 +294,7 @@ export const addTicketReply = mutation({
 
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!currentUser) {

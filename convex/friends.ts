@@ -18,7 +18,7 @@ export const searchUsers = query({
 
     const currentUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!currentUser) {
@@ -77,7 +77,7 @@ export const sendFriendRequestById = mutation({
 
     const fromUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!fromUser) {
@@ -203,7 +203,7 @@ export const sendFriendRequest = mutation({
 
     const fromUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!fromUser) {
@@ -330,7 +330,7 @@ export const getPendingRequests = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -384,7 +384,7 @@ export const acceptFriendRequest = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -449,7 +449,7 @@ export const rejectFriendRequest = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -498,7 +498,7 @@ export const getFriends = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
@@ -560,7 +560,7 @@ export const removeFriend = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email))
+      .withIndex("email", (q) => q.eq("email", identity.email))
       .unique();
 
     if (!user) {
