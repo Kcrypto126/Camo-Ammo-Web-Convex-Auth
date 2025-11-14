@@ -25,7 +25,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           id: profile.sub,
           email: profile.email,
           name: profile.name,
-          picture: profile.picture,
+          // Map picture to avatar to match schema
+          avatar: profile.picture,
           emailVerified: profile.email_verified ?? true,
         };
       },

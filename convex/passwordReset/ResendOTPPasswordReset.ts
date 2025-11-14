@@ -1,6 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { alphabet, generateRandomString } from "oslo/crypto";
 import { Resend as ResendAPI } from "resend";
+import { render } from "@react-email/render";
 import { PasswordResetEmail } from "./PasswordResetEmail";
 
 export const ResendOTPPasswordReset = Email({
@@ -16,13 +17,15 @@ export const ResendOTPPasswordReset = Email({
     expires,
   }) {
     const resend = new ResendAPI(provider.apiKey);
+    // Render React component to HTML string to avoid browser API dependencies
+    const html = await render(PasswordResetEmail({ code: token, expires }));
     const { error } = await resend.emails.send({
       // TODO: Update with your app name and email address
       from: process.env.AUTH_EMAIL ?? "My App <onboarding@resend.dev>",
       to: [email],
       // TODO: Update with your app name
       subject: `Reset password in My App`,
-      react: PasswordResetEmail({ code: token, expires }),
+      html,
     });
 
     if (error) {
