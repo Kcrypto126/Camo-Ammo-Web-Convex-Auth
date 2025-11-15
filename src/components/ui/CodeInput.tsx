@@ -4,10 +4,10 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
-export function CodeInput({ length = 8 }: { length?: number }) {
+export function CodeInput({ length = 4 }: { length?: number }) {
   return (
     <div className="mb-4">
-      <InputOTP maxLength={8} name="code" id="code">
+      <InputOTP maxLength={4} name="code" id="code">
         <InputOTPGroup>
           {Array(length)
             .fill(null)

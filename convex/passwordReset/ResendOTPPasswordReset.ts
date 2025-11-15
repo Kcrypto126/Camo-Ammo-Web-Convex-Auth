@@ -8,7 +8,7 @@ export const ResendOTPPasswordReset = Email({
   id: "resend-otp-password-reset",
   apiKey: process.env.AUTH_RESEND_KEY,
   async generateVerificationToken() {
-    return generateRandomString(8, alphabet("0-9"));
+    return generateRandomString(4, alphabet("0-9"));
   },
   async sendVerificationRequest({
     identifier: email,
@@ -21,10 +21,10 @@ export const ResendOTPPasswordReset = Email({
     const html = await render(PasswordResetEmail({ code: token, expires }));
     const { error } = await resend.emails.send({
       // TODO: Update with your app name and email address
-      from: process.env.AUTH_EMAIL ?? "My App <onboarding@resend.dev>",
+      from: process.env.AUTH_EMAIL ?? "Camo & Ammo <onboarding@camo.com>",
       to: [email],
       // TODO: Update with your app name
-      subject: `Reset password in My App`,
+      subject: `Reset password in Camo & Ammo`,
       html,
     });
 

@@ -22,7 +22,7 @@ export function PasswordResetEmail({
         <Container className="container px-20 font-sans">
           <Heading className="text-xl font-bold mb-4">
             {/* TODO: Update with your app name */}
-            Reset your password in My App
+            Reset your password in Camo & Ammo
           </Heading>
           <Text className="text-sm">
             Please enter the following code on the password reset page.
