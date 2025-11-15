@@ -9,8 +9,8 @@ export default function Index() {
         <WelcomePage />
       </Unauthenticated>
       <Authenticated>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        {/* <Dashboard /> */}
+        {/* <h1 className="text-2xl font-bold text-white">Dashboard</h1> */}
+        <Dashboard />
       </Authenticated>
     </>
   );

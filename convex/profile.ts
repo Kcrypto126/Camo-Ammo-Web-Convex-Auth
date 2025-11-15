@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
+import type { Id } from "./_generated/dataModel.d.ts";
 
 export const getMyProfile = query({
   args: {},
@@ -13,19 +14,44 @@ export const getMyProfile = query({
       });
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
+    // Look up by email first (preferred method)
+    if (identity.email) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email!))
+        .unique();
 
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
+      if (user) {
+        return user;
+      }
     }
 
-    return user;
+    // Fall back to subject-based lookup if email lookup failed
+    if (identity.subject) {
+      const parts = identity.subject.split("|");
+      if (parts.length > 0) {
+        try {
+          const userId = parts[0] as Id<"users">;
+          const user = await ctx.db.get(userId);
+          if (user) {
+            return user;
+          }
+        } catch (error) {
+          // Subject is not a valid Convex ID, continue
+          console.log("[getMyProfile] Subject is not a valid Convex ID", {
+            subject: identity.subject,
+          });
+        }
+      }
+    }
+
+    // User not found - return null instead of throwing
+    // This allows the frontend to handle the case where user creation is in progress
+    console.log(
+      "[getMyProfile] User not found in database yet, waiting for user creation",
+      { email: identity.email, subject: identity.subject },
+    );
+    return null;
   },
 });
 

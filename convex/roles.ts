@@ -5,15 +5,49 @@ import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
 import type { Id } from "./_generated/dataModel.d.ts";
 
 // Super admin email
-const SUPER_ADMIN_EMAIL = "rex@diazcorporations.com";
+const SUPER_ADMIN_EMAIL =
+  process.env.SUPER_ADMIN_EMAIL ?? "rex@diazcorporations.com";
 
 // Helper function to get current user
 async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
-  const userId = await ctx.auth.getUserIdentity();
-  if (!userId) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
     return null;
   }
-  return await ctx.db.get(userId.subject as Id<"users">);
+
+  // Preferred: Look up by email, if available
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+    return user;
+  }
+
+  // Otherwise, fall back to subject-based lookup (if possible)
+  // e.g., subject is "<userId>|<provider>"
+  if (identity.subject) {
+    // Try to parse subject - it might be in format "userId|provider"
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue to return null
+        console.log(
+          "[getCurrentUser] Subject is not a valid Convex ID, trying email lookup",
+          { subject: identity.subject },
+        );
+      }
+    }
+  }
+
+  // No user found
+  return null;
 }
 
 // Helper function to require authentication
@@ -59,17 +93,17 @@ export const PERMISSIONS = {
   EDIT_USERS: "edit_users",
   DELETE_USERS: "delete_users",
   BAN_USERS: "ban_users",
-  
+
   // Role management
   MANAGE_ROLES: "manage_roles",
-  
+
   // Content moderation
   MODERATE_FORUMS: "moderate_forums",
   MODERATE_MARKETPLACE: "moderate_marketplace",
-  
+
   // Subscriptions
   MANAGE_SUBSCRIPTIONS: "manage_subscriptions",
-  
+
   // System
   VIEW_ANALYTICS: "view_analytics",
 } as const;
@@ -139,23 +173,27 @@ export const listArchivedUsers = query({
 export const changeUserRole = mutation({
   args: {
     userId: v.id("users"),
-    newRole: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+    newRole: v.union(
+      v.literal("owner"),
+      v.literal("admin"),
+      v.literal("member"),
+    ),
   },
   handler: async (ctx, args) => {
     const currentUser = await requireOwner(ctx);
-    
+
     // Get target user's old role
     const targetUser = await ctx.db.get(args.userId);
     const oldRole = targetUser?.role || "member";
-    
+
     // Get default permissions for the new role
     const permissions = DEFAULT_PERMISSIONS[args.newRole];
-    
+
     await ctx.db.patch(args.userId, {
       role: args.newRole,
       permissions,
     });
-    
+
     // Log the role change
     await ctx.db.insert("auditLogs", {
       userId: currentUser._id,
@@ -185,7 +223,7 @@ export const updateRolePermissions = mutation({
   },
   handler: async (ctx, args) => {
     await requireOwner(ctx);
-    
+
     // Cannot modify owner permissions
     if (args.role === "owner") {
       throw new ConvexError({
@@ -193,10 +231,10 @@ export const updateRolePermissions = mutation({
         code: "FORBIDDEN",
       });
     }
-    
+
     // Update all users with this role to have the new permissions
     const usersWithRole = await ctx.db.query("users").collect();
-    
+
     for (const user of usersWithRole) {
       if (user.role === args.role) {
         await ctx.db.patch(user._id, {
@@ -204,8 +242,11 @@ export const updateRolePermissions = mutation({
         });
       }
     }
-    
-    return { success: true, updated: usersWithRole.filter(u => u.role === args.role).length };
+
+    return {
+      success: true,
+      updated: usersWithRole.filter((u) => u.role === args.role).length,
+    };
   },
 });
 
@@ -218,7 +259,7 @@ export const ensureSuperAdmin = mutation({
       .query("users")
       .filter((q) => q.eq(q.field("email"), SUPER_ADMIN_EMAIL))
       .first();
-    
+
     if (superAdminUser && superAdminUser.role !== "owner") {
       await ctx.db.patch(superAdminUser._id, {
         role: "owner",
@@ -226,8 +267,11 @@ export const ensureSuperAdmin = mutation({
       });
       return { updated: true, userId: superAdminUser._id };
     }
-    
-    return { updated: false, message: "Super admin already set or user not found" };
+
+    return {
+      updated: false,
+      message: "Super admin already set or user not found",
+    };
   },
 });
 
@@ -236,7 +280,7 @@ export const getUserById = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdminOrOwner(ctx);
-    
+
     const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new ConvexError({
@@ -244,7 +288,7 @@ export const getUserById = query({
         code: "NOT_FOUND",
       });
     }
-    
+
     return user;
   },
 });
@@ -253,15 +297,19 @@ export const getUserById = query({
 export const updateAccountStatus = mutation({
   args: {
     userId: v.id("users"),
-    status: v.union(v.literal("active"), v.literal("hold"), v.literal("banned")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("hold"),
+      v.literal("banned"),
+    ),
   },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     await ctx.db.patch(args.userId, {
       accountStatus: args.status,
     });
-    
+
     // Log the status change
     await ctx.db.insert("auditLogs", {
       userId: currentUser._id,
@@ -282,15 +330,17 @@ export const restrictAccountAccess = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     await ctx.db.patch(args.userId, {
       accountAccessRestricted: args.restricted,
     });
-    
+
     // Log the access restriction change
     await ctx.db.insert("auditLogs", {
       userId: currentUser._id,
-      action: args.restricted ? "Restricted account access" : "Restored account access",
+      action: args.restricted
+        ? "Restricted account access"
+        : "Restored account access",
       entityType: "user",
       entityId: args.userId,
       changes: `accountAccessRestricted: ${args.restricted}`,
@@ -304,13 +354,13 @@ export const getAdminNotes = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdminOrOwner(ctx);
-    
+
     const notes = await ctx.db
       .query("adminNotes")
       .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
-    
+
     // Fetch author info for each note
     const notesWithAuthors = await Promise.all(
       notes.map(async (note) => {
@@ -319,9 +369,9 @@ export const getAdminNotes = query({
           ...note,
           authorName: author?.name || "Unknown",
         };
-      })
+      }),
     );
-    
+
     return notesWithAuthors;
   },
 });
@@ -334,14 +384,14 @@ export const addAdminNote = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     const noteId = await ctx.db.insert("adminNotes", {
       userId: args.userId,
       authorId: currentUser._id,
       content: args.content,
       createdAt: Date.now(),
     });
-    
+
     return noteId;
   },
 });
@@ -360,13 +410,13 @@ export const archiveUser = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     await ctx.db.patch(args.userId, {
       archived: true,
       archivedAt: Date.now(),
       archivedBy: currentUser._id,
     });
-    
+
     // Log the archive action
     await ctx.db.insert("auditLogs", {
       userId: currentUser._id,
@@ -383,13 +433,13 @@ export const unarchiveUser = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     await ctx.db.patch(args.userId, {
       archived: false,
       archivedAt: undefined,
       archivedBy: undefined,
     });
-    
+
     // Log the unarchive action
     await ctx.db.insert("auditLogs", {
       userId: currentUser._id,
@@ -406,13 +456,13 @@ export const getCallLogs = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdminOrOwner(ctx);
-    
+
     const logs = await ctx.db
       .query("callLogs")
       .withIndex("by_user_call_date", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
-    
+
     // Fetch author info for each log
     const logsWithAuthors = await Promise.all(
       logs.map(async (log) => {
@@ -421,9 +471,9 @@ export const getCallLogs = query({
           ...log,
           authorName: author?.name || "Unknown",
         };
-      })
+      }),
     );
-    
+
     return logsWithAuthors;
   },
 });
@@ -440,7 +490,7 @@ export const addCallLog = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     const logId = await ctx.db.insert("callLogs", {
       userId: args.userId,
       authorId: currentUser._id,
@@ -451,7 +501,7 @@ export const addCallLog = mutation({
       callDate: args.callDate,
       createdAt: Date.now(),
     });
-    
+
     return logId;
   },
 });
@@ -461,13 +511,13 @@ export const getMemberFiles = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdminOrOwner(ctx);
-    
+
     const files = await ctx.db
       .query("memberFiles")
       .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
-    
+
     // Fetch uploader info for each file
     const filesWithUploaders = await Promise.all(
       files.map(async (file) => {
@@ -476,9 +526,9 @@ export const getMemberFiles = query({
           ...file,
           uploaderName: uploader?.name || "Unknown",
         };
-      })
+      }),
     );
-    
+
     return filesWithUploaders;
   },
 });
@@ -504,7 +554,7 @@ export const addMemberFile = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await requireAdminOrOwner(ctx);
-    
+
     const fileId = await ctx.db.insert("memberFiles", {
       userId: args.userId,
       uploadedBy: currentUser._id,
@@ -515,7 +565,7 @@ export const addMemberFile = mutation({
       description: args.description,
       createdAt: Date.now(),
     });
-    
+
     return fileId;
   },
 });
@@ -525,12 +575,12 @@ export const deleteMemberFile = mutation({
   args: { fileId: v.id("memberFiles") },
   handler: async (ctx, args) => {
     await requireAdminOrOwner(ctx);
-    
+
     const file = await ctx.db.get(args.fileId);
     if (file) {
       await ctx.storage.delete(file.storageId);
     }
-    
+
     await ctx.db.delete(args.fileId);
   },
 });
