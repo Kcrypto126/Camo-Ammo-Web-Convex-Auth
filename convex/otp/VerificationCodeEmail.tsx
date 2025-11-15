@@ -22,7 +22,7 @@ export function VerificationCodeEmail({
         <Container className="container px-20 font-sans">
           <Heading className="text-xl font-bold mb-4">
             {/* TODO: Update with your app name */}
-            Sign in to My App
+            Sign in to Camo & Ammo
           </Heading>
           <Text className="text-sm">
             Please enter the following code on the sign in page.
