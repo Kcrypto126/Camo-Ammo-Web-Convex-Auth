@@ -57,19 +57,31 @@ export default function Dashboard() {
   const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
   const [showLeaseReview, setShowLeaseReview] = useState(false);
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
-  const [membersView, setMembersView] = useState<"main" | "members" | "bans" | "subscriptions" | "administrators" | "permissions" | "archived" | "audit" | "view_profile">("main");
-  const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(null);
+  const [membersView, setMembersView] = useState<
+    | "main"
+    | "members"
+    | "bans"
+    | "subscriptions"
+    | "administrators"
+    | "permissions"
+    | "archived"
+    | "audit"
+    | "view_profile"
+  >("main");
+  const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(
+    null,
+  );
   const [showPublicProfile, setShowPublicProfile] = useState(false);
-  const [publicProfileUserId, setPublicProfileUserId] = useState<Id<"users"> | null>(null);
+  const [publicProfileUserId, setPublicProfileUserId] =
+    useState<Id<"users"> | null>(null);
   const [showForumModeration, setShowForumModeration] = useState(false);
   const [showOpenTicketsList, setShowOpenTicketsList] = useState(false);
   const [showPendingPostsList, setShowPendingPostsList] = useState(false);
   const [showReportedPostsList, setShowReportedPostsList] = useState(false);
 
   const [showCreateLeaseDialog, setShowCreateLeaseDialog] = useState(false);
-  const [selectedLeaseId, setSelectedLeaseId] = useState<Id<"landLeases"> | null>(
-    null
-  );
+  const [selectedLeaseId, setSelectedLeaseId] =
+    useState<Id<"landLeases"> | null>(null);
   const [showLeaseDetailsDialog, setShowLeaseDetailsDialog] = useState(false);
   const [showInquiryDialog, setShowInquiryDialog] = useState(false);
   const [userLocation, setUserLocation] = useState<{
@@ -80,7 +92,7 @@ export default function Dashboard() {
   // Show biometric prompt on first sign-in
   useEffect(() => {
     const hasShownPrompt = localStorage.getItem("biometric_prompt_shown");
-    if (isAvailable && !isEnabled && !hasShownPrompt && user?.profile.sub) {
+    if (isAvailable && !isEnabled && !hasShownPrompt && user?._id) {
       // Delay showing the prompt slightly so user sees the app first
       const timer = setTimeout(() => {
         setShowBiometricPrompt(true);
@@ -168,7 +180,10 @@ export default function Dashboard() {
     setShowReportedPostsList(true);
   };
 
-  const handleViewTicket = (userId: Id<"users">, ticketId: Id<"supportTickets">) => {
+  const handleViewTicket = (
+    userId: Id<"users">,
+    ticketId: Id<"supportTickets">,
+  ) => {
     setShowOpenTicketsList(false);
     sessionStorage.setItem("previousMembersView", "members");
     sessionStorage.setItem("expandedTicketId", ticketId);
@@ -188,25 +203,19 @@ export default function Dashboard() {
 
     if (showPendingPostsList) {
       return (
-        <PendingPostsListPage
-          onBack={() => setShowPendingPostsList(false)}
-        />
+        <PendingPostsListPage onBack={() => setShowPendingPostsList(false)} />
       );
     }
 
     if (showReportedPostsList) {
       return (
-        <ReportedPostsListPage
-          onBack={() => setShowReportedPostsList(false)}
-        />
+        <ReportedPostsListPage onBack={() => setShowReportedPostsList(false)} />
       );
     }
 
     if (showForumModeration) {
       return (
-        <ForumModerationPage 
-          onBack={() => setShowForumModeration(false)} 
-        />
+        <ForumModerationPage onBack={() => setShowForumModeration(false)} />
       );
     }
 
@@ -254,7 +263,8 @@ export default function Dashboard() {
       case "members":
         if (membersView === "view_profile" && selectedUserId) {
           // Track where we came from before viewing profile
-          const previousView = sessionStorage.getItem("previousMembersView") || "members";
+          const previousView =
+            sessionStorage.getItem("previousMembersView") || "members";
           return (
             <ViewMemberProfilePage
               userId={selectedUserId}
@@ -331,22 +341,31 @@ export default function Dashboard() {
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
       {/* Minimal Header - Only show on non-map tabs */}
-      {!showFullMap && activeTab !== "map" && activeTab !== "myhunt" && activeTab !== "mytools" && activeTab !== "members" && (
-        <header className="z-[1001] flex-none border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="flex items-center justify-between px-4 py-3">
-            <h1 className="text-lg font-bold tracking-tight">
-              {activeTab === "scouting" && "Scouting Trips"}
-              {activeTab === "marketplace" && (showLeaseReview ? "Admin: Review Leases" : "Land Leasing")}
-              {activeTab === "friends" && "Friends"}
-            </h1>
-            {activeTab === "marketplace" && showLeaseReview && (
-              <Button variant="ghost" size="sm" onClick={() => setShowLeaseReview(false)}>
-                Back
-              </Button>
-            )}
-          </div>
-        </header>
-      )}
+      {!showFullMap &&
+        activeTab !== "map" &&
+        activeTab !== "myhunt" &&
+        activeTab !== "mytools" &&
+        activeTab !== "members" && (
+          <header className="z-[1001] flex-none border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="flex items-center justify-between px-4 py-3">
+              <h1 className="text-lg font-bold tracking-tight">
+                {activeTab === "scouting" && "Scouting Trips"}
+                {activeTab === "marketplace" &&
+                  (showLeaseReview ? "Admin: Review Leases" : "Land Leasing")}
+                {activeTab === "friends" && "Friends"}
+              </h1>
+              {activeTab === "marketplace" && showLeaseReview && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowLeaseReview(false)}
+                >
+                  Back
+                </Button>
+              )}
+            </div>
+          </header>
+        )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden bg-background">
@@ -354,7 +373,11 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab={displayTab} onTabChange={handleTabChange} userRole={userRole} />
+      <BottomNav
+        activeTab={displayTab}
+        onTabChange={handleTabChange}
+        userRole={userRole}
+      />
 
       {/* Emergency Dialog */}
       <Dialog open={showEmergencyDialog} onOpenChange={setShowEmergencyDialog}>
@@ -426,9 +449,9 @@ export default function Dashboard() {
       />
 
       {/* Biometric Prompt */}
-      {user?.profile.sub && (
+      {user?._id && (
         <BiometricPrompt
-          userId={user.profile.sub}
+          userId={user._id}
           open={showBiometricPrompt}
           onOpenChange={setShowBiometricPrompt}
         />

@@ -21,7 +21,7 @@ export const ResendOTPPasswordReset = Email({
     const html = await render(PasswordResetEmail({ code: token, expires }));
     const { error } = await resend.emails.send({
       // TODO: Update with your app name and email address
-      from: process.env.AUTH_EMAIL ?? "Camo & Ammo <onboarding@camo.com>",
+      from: process.env.AUTH_EMAIL ?? "Camo & Ammo <no-reply@camoandammo.com>",
       to: [email],
       // TODO: Update with your app name
       subject: `Reset password in Camo & Ammo`,
