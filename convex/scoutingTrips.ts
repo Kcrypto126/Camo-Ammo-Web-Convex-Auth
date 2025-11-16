@@ -1,6 +1,48 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      return user;
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+        });
+      }
+    }
+  }
+
+  return null;
+}
 
 // Create a new scouting trip
 export const createTrip = mutation({
@@ -19,22 +61,10 @@ export const createTrip = mutation({
     maxParticipants: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -75,22 +105,10 @@ export const createTrip = mutation({
 export const getMyTrips = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -126,22 +144,10 @@ export const getMyTrips = query({
 export const getMyParticipatingTrips = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -189,22 +195,10 @@ export const getAvailableTrips = query({
     state: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -303,22 +297,10 @@ export const getTripDetails = query({
     tripId: v.id("scoutingTrips"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -375,22 +357,10 @@ export const joinTrip = mutation({
     tripId: v.id("scoutingTrips"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -460,22 +430,10 @@ export const leaveTrip = mutation({
     tripId: v.id("scoutingTrips"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -524,22 +482,10 @@ export const cancelTrip = mutation({
     tripId: v.id("scoutingTrips"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
