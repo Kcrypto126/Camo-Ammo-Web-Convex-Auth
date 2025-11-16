@@ -1,6 +1,49 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
+import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      return user;
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+        });
+      }
+    }
+  }
+
+  return null;
+}
 
 export const createWaypoint = mutation({
   args: {
@@ -15,22 +58,10 @@ export const createWaypoint = mutation({
     trackId: v.optional(v.id("tracks")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
@@ -56,16 +87,7 @@ export const createWaypoint = mutation({
 export const getMyWaypoints = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return [];
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       return [];
     }
@@ -80,11 +102,11 @@ export const getMyWaypoints = query({
 export const deleteWaypoint = mutation({
   args: { waypointId: v.id("waypoints") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
       throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
+        message: "User not found. Please ensure your account has been created.",
+        code: "NOT_FOUND",
       });
     }
 
@@ -93,6 +115,14 @@ export const deleteWaypoint = mutation({
       throw new ConvexError({
         message: "Waypoint not found",
         code: "NOT_FOUND",
+      });
+    }
+
+    // Verify ownership
+    if (waypoint.userId !== user._id) {
+      throw new ConvexError({
+        message: "Not authorized to delete this waypoint",
+        code: "FORBIDDEN",
       });
     }
 
@@ -111,11 +141,11 @@ export const updateWaypoint = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
       throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
+        message: "User not found. Please ensure your account has been created.",
+        code: "NOT_FOUND",
       });
     }
 
@@ -124,6 +154,14 @@ export const updateWaypoint = mutation({
       throw new ConvexError({
         message: "Waypoint not found",
         code: "NOT_FOUND",
+      });
+    }
+
+    // Verify ownership
+    if (waypoint.userId !== user._id) {
+      throw new ConvexError({
+        message: "Not authorized to update this waypoint",
+        code: "FORBIDDEN",
       });
     }
 
