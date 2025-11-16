@@ -1,8 +1,18 @@
 import { useAuth } from "@/hooks/use-auth.ts";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
@@ -47,11 +57,13 @@ import { useBiometricAuth } from "@/hooks/use-biometric-auth.ts";
 import { useLoadScript } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps.ts";
 
-const emergencyContactSchema = z.object({
-  name: z.string(),
-  phone: z.string(),
-  relationship: z.string(),
-}).optional();
+const emergencyContactSchema = z
+  .object({
+    name: z.string(),
+    phone: z.string(),
+    relationship: z.string(),
+  })
+  .optional();
 
 const profileSchema = z.object({
   name: z.string().optional(),
@@ -97,31 +109,79 @@ const COUNTRIES = [
 ];
 
 const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
 ];
 
-const LIBRARIES: ("places")[] = ["places"];
+const LIBRARIES: "places"[] = ["places"];
 
 export default function ProfilePage() {
-  const { user, signoutRedirect } = useAuth();
+  const { user, signOut } = useAuth();
   const profile = useQuery(api.profile.getMyProfile);
   const updateProfile = useMutation(api.profile.updateProfile);
-  const { isAvailable, isEnabled, enableBiometric, disableBiometric } = useBiometricAuth();
+  const { isAvailable, isEnabled, enableBiometric, disableBiometric } =
+    useBiometricAuth();
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
   });
-  
+
   // Get avatar URL from storage if it's a storage ID
   const avatarUrl = useQuery(
     api.profile.getPhotoUrl,
-    profile?.avatar && profile.avatar.startsWith("kg") ? { storageId: profile.avatar as never } : "skip"
+    profile?.avatar && profile.avatar.startsWith("kg")
+      ? { storageId: profile.avatar as never }
+      : "skip",
   );
-  
+
   const [contact1Open, setContact1Open] = useState(false);
   const [contact2Open, setContact2Open] = useState(false);
   const [contact3Open, setContact3Open] = useState(false);
@@ -130,17 +190,26 @@ export default function ProfilePage() {
   const addressInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const userName = profile?.name || user?.profile.name || "Hunter";
+  const userName = profile?.name || user?.name || "Hunter";
   // Use uploaded avatar from database, fallback to OAuth profile URL, then undefined
-  const userAvatar = avatarUrl || profile?.avatar || (typeof user?.profile.profileUrl === "string" ? user.profile.profileUrl : undefined);
+  const userAvatar =
+    avatarUrl ||
+    profile?.avatar ||
+    (typeof user?.avatar === "string" ? user.avatar : undefined);
   const userInitials = userName
     .split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<ProfileFormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       huntingPreferences: [],
@@ -158,7 +227,7 @@ export default function ProfilePage() {
       setValue("city", profile.city || "");
       setValue("state", profile.state || "");
       setValue("zipCode", profile.zipCode || "");
-      
+
       if (profile.emergencyContact1) {
         setValue("emergencyContact1", profile.emergencyContact1);
         setContact1Open(true);
@@ -171,10 +240,13 @@ export default function ProfilePage() {
         setValue("emergencyContact3", profile.emergencyContact3);
         setContact3Open(true);
       }
-      
+
       setValue("huntingPreferences", profile.huntingPreferences || []);
       setValue("weaponTypes", profile.weaponTypes || []);
-      setValue("interestedInSpecialEvents", profile.interestedInSpecialEvents || false);
+      setValue(
+        "interestedInSpecialEvents",
+        profile.interestedInSpecialEvents || false,
+      );
     }
   }, [profile, setValue]);
 
@@ -186,7 +258,7 @@ export default function ProfilePage() {
         {
           types: ["address"],
           componentRestrictions: { country: ["us", "ca", "mx"] },
-        }
+        },
       );
 
       autocompleteRef.current.addListener("place_changed", () => {
@@ -222,7 +294,7 @@ export default function ProfilePage() {
           });
 
           const streetAddress = `${streetNumber} ${route}`.trim();
-          
+
           if (streetAddress) setValue("streetAddress", streetAddress);
           if (city) setValue("city", city);
           if (state) setValue("state", state);
@@ -241,12 +313,21 @@ export default function ProfilePage() {
     try {
       setIsSaving(true);
       console.log("Submitting profile update:", data);
-      
+
       // Filter out empty emergency contacts
-      const contact1 = data.emergencyContact1 && data.emergencyContact1.name ? data.emergencyContact1 : undefined;
-      const contact2 = data.emergencyContact2 && data.emergencyContact2.name ? data.emergencyContact2 : undefined;
-      const contact3 = data.emergencyContact3 && data.emergencyContact3.name ? data.emergencyContact3 : undefined;
-      
+      const contact1 =
+        data.emergencyContact1 && data.emergencyContact1.name
+          ? data.emergencyContact1
+          : undefined;
+      const contact2 =
+        data.emergencyContact2 && data.emergencyContact2.name
+          ? data.emergencyContact2
+          : undefined;
+      const contact3 =
+        data.emergencyContact3 && data.emergencyContact3.name
+          ? data.emergencyContact3
+          : undefined;
+
       await updateProfile({
         name: data.name,
         country: data.country,
@@ -273,7 +354,10 @@ export default function ProfilePage() {
   const toggleHuntingPreference = (id: string) => {
     const current = huntingPreferences;
     if (current.includes(id)) {
-      setValue("huntingPreferences", current.filter((p) => p !== id));
+      setValue(
+        "huntingPreferences",
+        current.filter((p) => p !== id),
+      );
     } else {
       setValue("huntingPreferences", [...current, id]);
     }
@@ -282,7 +366,10 @@ export default function ProfilePage() {
   const toggleWeaponType = (id: string) => {
     const current = weaponTypes;
     if (current.includes(id)) {
-      setValue("weaponTypes", current.filter((w) => w !== id));
+      setValue(
+        "weaponTypes",
+        current.filter((w) => w !== id),
+      );
     } else {
       setValue("weaponTypes", [...current, id]);
     }
@@ -323,15 +410,18 @@ export default function ProfilePage() {
             </Badge>
           )}
         </div>
-        {user?.profile.email && (
+        {user?.email && (
           <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             <Mail className="h-4 w-4" />
-            {user.profile.email}
+            {user.email}
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4 px-4 pb-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="mt-6 space-y-4 px-4 pb-6"
+      >
         {/* Personal Information */}
         <Card>
           <CardHeader>
@@ -343,13 +433,11 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                placeholder="John Smith"
-                {...register("name")}
-              />
+              <Input id="name" placeholder="John Smith" {...register("name")} />
               {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
           </CardContent>
@@ -394,7 +482,9 @@ export default function ProfilePage() {
                 ref={(e) => {
                   register("streetAddress").ref(e);
                   if (e) {
-                    (addressInputRef as React.MutableRefObject<HTMLInputElement>).current = e;
+                    (
+                      addressInputRef as React.MutableRefObject<HTMLInputElement>
+                    ).current = e;
                   }
                 }}
               />
@@ -448,7 +538,9 @@ export default function ProfilePage() {
               <AlertCircle className="h-5 w-5" />
               <CardTitle>Emergency Contacts</CardTitle>
             </div>
-            <CardDescription>Optional - Add up to 3 emergency contacts</CardDescription>
+            <CardDescription>
+              Optional - Add up to 3 emergency contacts
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Contact 1 */}
@@ -641,7 +733,9 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <Label htmlFor="specialEvents">Interested in special events</Label>
+              <Label htmlFor="specialEvents">
+                Interested in special events
+              </Label>
               <Switch
                 id="specialEvents"
                 checked={interestedInSpecialEvents}
@@ -654,12 +748,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Save Button */}
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          disabled={isSaving}
-        >
+        <Button type="submit" className="w-full" size="lg" disabled={isSaving}>
           <Save className="mr-2 h-4 w-4" />
           {isSaving ? "Saving..." : "Save Profile"}
         </Button>
@@ -692,13 +781,15 @@ export default function ProfilePage() {
                 <Switch
                   checked={isEnabled}
                   onCheckedChange={async (checked) => {
-                    if (checked && user?.profile.sub) {
+                    if (checked && user?._id) {
                       setIsEnablingBiometric(true);
-                      const success = await enableBiometric(user.profile.sub);
+                      const success = await enableBiometric(user._id);
                       if (success) {
                         toast.success("Biometric authentication enabled!");
                       } else {
-                        toast.error("Failed to enable biometric authentication");
+                        toast.error(
+                          "Failed to enable biometric authentication",
+                        );
                       }
                       setIsEnablingBiometric(false);
                     } else {
@@ -720,7 +811,7 @@ export default function ProfilePage() {
           type="button"
           variant="outline"
           className="w-full justify-start text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          onClick={() => signoutRedirect()}
+          onClick={() => signOut()}
         >
           <LogOut className="mr-3 h-4 w-4" />
           Sign Out
