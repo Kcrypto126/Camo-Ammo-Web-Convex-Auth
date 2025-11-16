@@ -346,7 +346,7 @@ export default function Dashboard() {
         activeTab !== "myhunt" &&
         activeTab !== "mytools" &&
         activeTab !== "members" && (
-          <header className="z-[1001] flex-none border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <header className="z-1001 flex-none border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
             <div className="flex items-center justify-between px-4 py-3">
               <h1 className="text-lg font-bold tracking-tight">
                 {activeTab === "scouting" && "Scouting Trips"}

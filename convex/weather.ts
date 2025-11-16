@@ -2,6 +2,7 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { ConvexError } from "convex/values";
 
 interface WeatherResponse {
   main: {
@@ -68,7 +69,11 @@ export const getCurrentWeather = action({
   handler: async (ctx, { lat, lng, units = "imperial" }) => {
     const apiKey = process.env.OPENWEATHER_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENWEATHER_API_KEY not configured");
+      throw new ConvexError({
+        message:
+          "OpenWeather API key not configured. Please set OPENWEATHER_API_KEY in your Convex environment variables. Get a free API key at https://openweathermap.org/api",
+        code: "CONFIGURATION_ERROR",
+      });
     }
 
     const params = new URLSearchParams({
@@ -79,11 +84,25 @@ export const getCurrentWeather = action({
     });
 
     const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?${params.toString()}`
+      `https://api.openweathermap.org/data/2.5/weather?${params.toString()}`,
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch weather data");
+      const errorText = await response.text().catch(() => "Unknown error");
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        throw new ConvexError({
+          message:
+            "Invalid OpenWeather API key. Please check your OPENWEATHER_API_KEY in Convex environment variables. Get a valid API key at https://openweathermap.org/api",
+          code: "CONFIGURATION_ERROR",
+        });
+      }
+
+      throw new ConvexError({
+        message: `Failed to fetch weather data: ${response.status} ${response.statusText}. ${errorText}`,
+        code: "EXTERNAL_API_ERROR",
+      });
     }
 
     const data: WeatherResponse = await response.json();
@@ -118,7 +137,11 @@ export const getForecast = action({
   handler: async (ctx, { lat, lng, units = "imperial" }) => {
     const apiKey = process.env.OPENWEATHER_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENWEATHER_API_KEY not configured");
+      throw new ConvexError({
+        message:
+          "OpenWeather API key not configured. Please set OPENWEATHER_API_KEY in your Convex environment variables. Get a free API key at https://openweathermap.org/api",
+        code: "CONFIGURATION_ERROR",
+      });
     }
 
     const params = new URLSearchParams({
@@ -130,11 +153,25 @@ export const getForecast = action({
     });
 
     const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?${params.toString()}`
+      `https://api.openweathermap.org/data/2.5/forecast?${params.toString()}`,
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch forecast data");
+      const errorText = await response.text().catch(() => "Unknown error");
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        throw new ConvexError({
+          message:
+            "Invalid OpenWeather API key. Please check your OPENWEATHER_API_KEY in Convex environment variables. Get a valid API key at https://openweathermap.org/api",
+          code: "CONFIGURATION_ERROR",
+        });
+      }
+
+      throw new ConvexError({
+        message: `Failed to fetch forecast data: ${response.status} ${response.statusText}. ${errorText}`,
+        code: "EXTERNAL_API_ERROR",
+      });
     }
 
     const data: ForecastResponse = await response.json();

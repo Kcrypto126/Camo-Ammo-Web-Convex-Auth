@@ -128,14 +128,34 @@ export const updateProfile = mutation({
       });
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
+    // Look up by email first (preferred method)
+    let user = null;
+    if (identity.email) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email!))
+        .unique();
+    }
+
+    // Fall back to subject-based lookup if email lookup failed
+    if (!user && identity.subject) {
+      const parts = identity.subject.split("|");
+      if (parts.length > 0) {
+        try {
+          const userId = parts[0] as Id<"users">;
+          user = await ctx.db.get(userId);
+        } catch (error) {
+          // Subject is not a valid Convex ID, continue
+          console.log("[updateProfile] Subject is not a valid Convex ID", {
+            subject: identity.subject,
+          });
+        }
+      }
+    }
 
     if (!user) {
       throw new ConvexError({
-        message: "User not found",
+        message: "User not found. Please ensure your account has been created.",
         code: "NOT_FOUND",
       });
     }
