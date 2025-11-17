@@ -29,7 +29,7 @@ export default function HuntingUnitPanel({
   };
 
   return (
-    <div className="absolute top-0 left-0 bottom-0 w-96 bg-background border-r shadow-lg z-[1000]">
+    <div className="absolute top-0 left-0 bottom-0 w-96 bg-background border-r shadow-lg z-1000">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-lg font-bold">Hunting Unit Details</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
