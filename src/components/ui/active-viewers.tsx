@@ -1,6 +1,10 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Eye } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -17,7 +21,7 @@ export function ActiveViewers({ entityType, entityId }: ActiveViewersProps) {
   });
   const registerViewer = useMutation(api.activeViewers.registerViewer);
   const unregisterViewer = useMutation(api.activeViewers.unregisterViewer);
-  
+
   // Keep track of registration
   const registeredRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -65,7 +69,7 @@ export function ActiveViewers({ entityType, entityId }: ActiveViewersProps) {
           Also viewing:
         </span>
         {viewers.map((viewer) => {
-          const initials = viewer.userName
+          const initials = viewer.name
             .split(" ")
             .map((n) => n[0])
             .join("")
@@ -75,11 +79,12 @@ export function ActiveViewers({ entityType, entityId }: ActiveViewersProps) {
           return (
             <div key={viewer.userId} className="flex items-center gap-1.5">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={viewer.userAvatar} />
+                {/* <AvatarImage src={viewer.avatar} /> */}
+                <AvatarImage src={undefined} />
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
               <Badge variant="secondary" className="text-xs">
-                {viewer.userName}
+                {viewer.name}
               </Badge>
             </div>
           );
