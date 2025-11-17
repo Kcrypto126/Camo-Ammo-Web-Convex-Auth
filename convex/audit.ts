@@ -2,6 +2,64 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    console.log("[getCurrentUser] No identity found");
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      console.log("[getCurrentUser] Found user by email:", identity.email);
+      return user;
+    } else {
+      console.log(
+        "[getCurrentUser] User not found by email, trying subject fallback:",
+        identity.email,
+      );
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          console.log(
+            "[getCurrentUser] Found user by subject:",
+            identity.subject,
+          );
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+          error,
+        });
+      }
+    }
+  }
+
+  console.log("[getCurrentUser] No user found for identity:", {
+    email: identity.email,
+    subject: identity.subject,
+  });
+  return null;
+}
 
 // Log an audit event
 export const logAudit = mutation({
@@ -12,16 +70,15 @@ export const logAudit = mutation({
     changes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await ctx.auth.getUserIdentity();
-    if (!userId) {
-      return; // Skip logging if not authenticated
-    }
-
-    const user = await ctx.db.get(userId.subject as Id<"users">);
-
+    console.log("[logAudit] Starting audit log");
+    const user = await getCurrentUser(ctx);
     if (!user) {
-      return; // Skip logging if user not found
+      console.log(
+        "[logAudit] User not found or not authenticated, skipping log",
+      );
+      return; // Skip logging if not authenticated or user not found
     }
+    console.log("[logAudit] User found:", user._id);
 
     await ctx.db.insert("auditLogs", {
       userId: user._id,
@@ -44,17 +101,19 @@ export const searchAuditLogs = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await ctx.auth.getUserIdentity();
-    if (!userId) {
+    console.log("[searchAuditLogs] Starting audit log search");
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) {
+      console.log("[searchAuditLogs] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[searchAuditLogs] User found:", currentUser._id);
 
-    const currentUser = await ctx.db.get(userId.subject as Id<"users">);
-
-    if (!currentUser || (currentUser.role !== "owner" && currentUser.role !== "admin")) {
+    if (currentUser.role !== "owner" && currentUser.role !== "admin") {
+      console.log("[searchAuditLogs] User not authorized");
       throw new ConvexError({
         message: "Not authorized",
         code: "FORBIDDEN",
@@ -94,7 +153,7 @@ export const searchAuditLogs = query({
           userPhone: user?.phoneNumber || "",
           memberNumber: user?.memberNumber || "",
         };
-      })
+      }),
     );
 
     // Apply search term filter if provided
@@ -122,17 +181,19 @@ export const getUserAuditLogs = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await ctx.auth.getUserIdentity();
-    if (!userId) {
+    console.log("[getUserAuditLogs] Starting user audit log query");
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) {
+      console.log("[getUserAuditLogs] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[getUserAuditLogs] User found:", currentUser._id);
 
-    const currentUser = await ctx.db.get(userId.subject as Id<"users">);
-
-    if (!currentUser || (currentUser.role !== "owner" && currentUser.role !== "admin")) {
+    if (currentUser.role !== "owner" && currentUser.role !== "admin") {
+      console.log("[getUserAuditLogs] User not authorized");
       throw new ConvexError({
         message: "Not authorized",
         code: "FORBIDDEN",
