@@ -24,7 +24,7 @@ export default function LayerControl({
   onLayerToggle,
 }: LayerControlProps) {
   return (
-    <div className="absolute top-4 right-4 z-[1000]">
+    <div className="absolute top-4 right-4 z-1000">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" className="gap-2 shadow-lg">
@@ -35,12 +35,10 @@ export default function LayerControl({
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>Map Layers</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          
+
           <DropdownMenuCheckboxItem
             checked={layers.properties}
-            onCheckedChange={(checked) =>
-              onLayerToggle("properties", checked)
-            }
+            onCheckedChange={(checked) => onLayerToggle("properties", checked)}
           >
             <MapPin className="w-4 h-4 mr-2" />
             Property Boundaries
@@ -58,9 +56,7 @@ export default function LayerControl({
 
           <DropdownMenuCheckboxItem
             checked={layers.friends}
-            onCheckedChange={(checked) =>
-              onLayerToggle("friends", checked)
-            }
+            onCheckedChange={(checked) => onLayerToggle("friends", checked)}
           >
             <Users className="w-4 h-4 mr-2" />
             Friends' Locations

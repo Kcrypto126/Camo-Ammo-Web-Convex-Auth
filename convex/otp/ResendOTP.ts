@@ -22,7 +22,7 @@ export const ResendOTP = Email({
     const html = await render(VerificationCodeEmail({ code: token, expires }));
     const { error } = await resend.emails.send({
       // TODO: Update with your app name and email address
-      from: process.env.AUTH_EMAIL ?? "Camo & Ammo <no-reply@camoandammo.com>",
+      from: process.env.AUTH_EMAIL ?? "Camo & Ammo <no-reply@sbinfotech.us>",
       to: [email],
       // TODO: Update with your app name
       subject: `Sign in to Camo & Ammo`,

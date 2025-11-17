@@ -41,7 +41,7 @@ function MapTypeControl({
   onMapTypeChange: (mapType: MapType) => void;
 }) {
   return (
-    <div className="absolute top-4 left-4 z-[1000]">
+    <div className="absolute top-4 left-4 z-1000">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" className="gap-2 shadow-lg">
@@ -108,7 +108,7 @@ function LocationButton({
   };
 
   return (
-    <div className="absolute bottom-20 right-4 z-[1000] flex flex-col gap-2 md:bottom-4">
+    <div className="absolute bottom-20 right-4 z-1000 flex flex-col gap-2 md:bottom-4">
       <Button
         size="icon"
         onClick={onWeatherClick}
