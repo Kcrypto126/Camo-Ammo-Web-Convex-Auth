@@ -2,6 +2,65 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
 import type { Doc } from "./_generated/dataModel.d.ts";
+import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    console.log("[getCurrentUser] No identity found");
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      console.log("[getCurrentUser] Found user by email:", identity.email);
+      return user;
+    } else {
+      console.log(
+        "[getCurrentUser] User not found by email, trying subject fallback:",
+        identity.email,
+      );
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          console.log(
+            "[getCurrentUser] Found user by subject:",
+            identity.subject,
+          );
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+          error,
+        });
+      }
+    }
+  }
+
+  console.log("[getCurrentUser] No user found for identity:", {
+    email: identity.email,
+    subject: identity.subject,
+  });
+  return null;
+}
 
 export const startTrack = mutation({
   args: {
@@ -9,25 +68,16 @@ export const startTrack = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[startTrack] Starting track creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[startTrack] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[startTrack] User found:", user._id);
 
     const trackId = await ctx.db.insert("tracks", {
       userId: user._id,
@@ -54,19 +104,31 @@ export const addTrackPoint = mutation({
     accuracy: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[addTrackPoint] Starting point addition");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[addTrackPoint] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[addTrackPoint] User found:", user._id);
 
     const track = await ctx.db.get(args.trackId);
     if (!track) {
       throw new ConvexError({
         message: "Track not found",
         code: "NOT_FOUND",
+      });
+    }
+
+    // Verify user owns the track
+    if (track.userId !== user._id) {
+      console.log("[addTrackPoint] User does not own track");
+      throw new ConvexError({
+        message: "Not authorized to add points to this track",
+        code: "FORBIDDEN",
       });
     }
 
@@ -114,19 +176,31 @@ export const stopTrack = mutation({
     trackId: v.id("tracks"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[stopTrack] Starting track stop");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[stopTrack] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[stopTrack] User found:", user._id);
 
     const track = await ctx.db.get(args.trackId);
     if (!track) {
       throw new ConvexError({
         message: "Track not found",
         code: "NOT_FOUND",
+      });
+    }
+
+    // Verify user owns the track
+    if (track.userId !== user._id) {
+      console.log("[stopTrack] User does not own track");
+      throw new ConvexError({
+        message: "Not authorized to stop this track",
+        code: "FORBIDDEN",
       });
     }
 
@@ -167,19 +241,15 @@ export const stopTrack = mutation({
 export const getMyTracks = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return [];
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getMyTracks] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user) {
+      console.log(
+        "[getMyTracks] User not found or not authenticated, returning empty array",
+      );
       return [];
     }
+    console.log("[getMyTracks] User found:", user._id);
 
     return await ctx.db
       .query("tracks")
@@ -192,19 +262,15 @@ export const getMyTracks = query({
 export const getActiveTrack = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return null;
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getActiveTrack] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user) {
+      console.log(
+        "[getActiveTrack] User not found or not authenticated, returning null",
+      );
       return null;
     }
+    console.log("[getActiveTrack] User found:", user._id);
 
     return await ctx.db
       .query("tracks")
@@ -218,19 +284,31 @@ export const getActiveTrack = query({
 export const deleteTrack = mutation({
   args: { trackId: v.id("tracks") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[deleteTrack] Starting track deletion");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[deleteTrack] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[deleteTrack] User found:", user._id);
 
     const track = await ctx.db.get(args.trackId);
     if (!track) {
       throw new ConvexError({
         message: "Track not found",
         code: "NOT_FOUND",
+      });
+    }
+
+    // Verify user owns the track
+    if (track.userId !== user._id) {
+      console.log("[deleteTrack] User does not own track");
+      throw new ConvexError({
+        message: "Not authorized to delete this track",
+        code: "FORBIDDEN",
       });
     }
 

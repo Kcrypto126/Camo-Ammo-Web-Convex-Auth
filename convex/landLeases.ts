@@ -1,6 +1,64 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    console.log("[getCurrentUser] No identity found");
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      console.log("[getCurrentUser] Found user by email:", identity.email);
+      return user;
+    } else {
+      console.log(
+        "[getCurrentUser] User not found by email, trying subject fallback:",
+        identity.email,
+      );
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          console.log(
+            "[getCurrentUser] Found user by subject:",
+            identity.subject,
+          );
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+          error,
+        });
+      }
+    }
+  }
+
+  console.log("[getCurrentUser] No user found for identity:", {
+    email: identity.email,
+    subject: identity.subject,
+  });
+  return null;
+}
 
 // Browse approved leases with filters (public view)
 export const browseLeases = query({
@@ -114,25 +172,16 @@ export const incrementLeaseView = mutation({
 export const getMyLeases = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[getMyLeases] Starting query");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[getMyLeases] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[getMyLeases] User found:", user._id);
 
     const leases = await ctx.db
       .query("landLeases")
@@ -173,25 +222,16 @@ export const createLease = mutation({
     contactEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[createLease] Starting lease creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[createLease] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[createLease] User found:", user._id);
 
     const now = Date.now();
 
@@ -253,25 +293,16 @@ export const updateLeaseStatus = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[updateLeaseStatus] Starting status update");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[updateLeaseStatus] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[updateLeaseStatus] User found:", user._id);
 
     const lease = await ctx.db.get(args.leaseId);
     if (!lease) {
@@ -299,25 +330,16 @@ export const updateLeaseStatus = mutation({
 export const deleteLease = mutation({
   args: { leaseId: v.id("landLeases") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[deleteLease] Starting lease deletion");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[deleteLease] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[deleteLease] User found:", user._id);
 
     const lease = await ctx.db.get(args.leaseId);
     if (!lease) {
@@ -349,25 +371,16 @@ export const sendInquiry = mutation({
     numberOfHunters: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[sendInquiry] Starting inquiry creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[sendInquiry] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[sendInquiry] User found:", user._id);
 
     const lease = await ctx.db.get(args.leaseId);
     if (!lease) {
@@ -398,25 +411,16 @@ export const sendInquiry = mutation({
 export const getMyInquiries = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[getMyInquiries] Starting query");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[getMyInquiries] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[getMyInquiries] User found:", user._id);
 
     const inquiries = await ctx.db
       .query("leaseInquiries")
@@ -445,25 +449,16 @@ export const getMyInquiries = query({
 export const getMySentInquiries = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[getMySentInquiries] Starting query");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[getMySentInquiries] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[getMySentInquiries] User found:", user._id);
 
     const inquiries = await ctx.db
       .query("leaseInquiries")
@@ -496,25 +491,16 @@ export const respondToInquiry = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[respondToInquiry] Starting inquiry response");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[respondToInquiry] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[respondToInquiry] User found:", user._id);
 
     const inquiry = await ctx.db.get(args.inquiryId);
     if (!inquiry) {
@@ -543,25 +529,16 @@ export const respondToInquiry = mutation({
 export const addSampleLeases = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[addSampleLeases] Starting sample lease creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[addSampleLeases] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[addSampleLeases] User found:", user._id);
 
     const now = Date.now();
     const nextYear = now + 365 * 24 * 60 * 60 * 1000;
@@ -722,16 +699,7 @@ export const addSampleLeases = mutation({
 export const hasLandReviewPermission = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return false;
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       return false;
     }
@@ -744,25 +712,16 @@ export const hasLandReviewPermission = query({
 export const getPendingLeases = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[getPendingLeases] Starting query");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[getPendingLeases] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[getPendingLeases] User found:", user._id);
 
     // Check if user has land review permission
     if (!user.isAdmin || !user.adminPermissions?.includes("land_review")) {
@@ -801,25 +760,16 @@ export const reviewLease = mutation({
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[reviewLease] Starting lease review");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[reviewLease] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[reviewLease] User found:", user._id);
 
     // Check if user has land review permission
     if (!user.isAdmin || !user.adminPermissions?.includes("land_review")) {
@@ -859,25 +809,16 @@ export const reviewLease = mutation({
 export const grantAdminPermission = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[grantAdminPermission] Starting permission grant");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[grantAdminPermission] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[grantAdminPermission] User found:", user._id);
 
     await ctx.db.patch(user._id, {
       isAdmin: true,
@@ -917,25 +858,16 @@ export const createListing = mutation({
     isPriceNegotiable: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[createListing] Starting listing creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[createListing] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[createListing] User found:", user._id);
 
     // Create the listing
     const leaseId = await ctx.db.insert("landLeases", {
