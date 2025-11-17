@@ -1,6 +1,65 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
+import type { Id } from "./_generated/dataModel.d.ts";
+import type { QueryCtx, MutationCtx } from "./_generated/server.d.ts";
+
+// Helper function to get current user with fallback lookup
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    console.log("[getCurrentUser] No identity found");
+    return null;
+  }
+
+  // Look up by email first (preferred method)
+  if (identity.email) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .unique();
+
+    if (user) {
+      console.log("[getCurrentUser] Found user by email:", identity.email);
+      return user;
+    } else {
+      console.log(
+        "[getCurrentUser] User not found by email, trying subject fallback:",
+        identity.email,
+      );
+    }
+  }
+
+  // Fall back to subject-based lookup if email lookup failed
+  if (identity.subject) {
+    const parts = identity.subject.split("|");
+    if (parts.length > 0) {
+      try {
+        const userId = parts[0] as Id<"users">;
+        const user = await ctx.db.get(userId);
+        if (user) {
+          console.log(
+            "[getCurrentUser] Found user by subject:",
+            identity.subject,
+          );
+          return user;
+        }
+      } catch (error) {
+        // Subject is not a valid Convex ID, continue
+        console.log("[getCurrentUser] Subject is not a valid Convex ID", {
+          subject: identity.subject,
+          error,
+        });
+      }
+    }
+  }
+
+  console.log("[getCurrentUser] No user found for identity:", {
+    email: identity.email,
+    subject: identity.subject,
+  });
+  return null;
+}
 
 // Get all forum posts (only approved posts for regular users)
 export const getPosts = query({
@@ -10,17 +69,8 @@ export const getPosts = query({
     city: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let isAdmin = false;
-
-    if (identity) {
-      const user = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", identity.email))
-        .unique();
-
-      isAdmin = user?.role === "owner" || user?.role === "admin";
-    }
+    const user = await getCurrentUser(ctx);
+    const isAdmin = user?.role === "owner" || user?.role === "admin";
 
     // Build query based on filters
     let postsQuery;
@@ -159,25 +209,16 @@ export const createPost = mutation({
     city: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[createPost] Starting post creation");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[createPost] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[createPost] User found:", user._id);
 
     // Check if user is banned from posting
     const now = Date.now();
@@ -217,25 +258,16 @@ export const addComment = mutation({
     parentCommentId: v.optional(v.id("forumComments")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[addComment] Starting comment addition");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[addComment] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[addComment] User found:", user._id);
 
     // Check if user is banned from posting
     const now = Date.now();
@@ -271,25 +303,16 @@ export const addComment = mutation({
 export const toggleLikePost = mutation({
   args: { postId: v.id("forumPosts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[toggleLikePost] Starting like toggle");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[toggleLikePost] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[toggleLikePost] User found:", user._id);
 
     // Check if already liked
     const existingLike = await ctx.db
@@ -333,16 +356,7 @@ export const toggleLikePost = mutation({
 export const hasLikedPost = query({
   args: { postId: v.id("forumPosts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return false;
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       return false;
     }
@@ -362,25 +376,16 @@ export const hasLikedPost = query({
 export const deletePost = mutation({
   args: { postId: v.id("forumPosts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[deletePost] Starting post deletion");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[deletePost] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[deletePost] User found:", user._id);
 
     const post = await ctx.db.get(args.postId);
     if (!post) {
@@ -418,25 +423,16 @@ export const deletePost = mutation({
 export const getPendingPosts = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getPendingPosts] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[getPendingPosts] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[getPendingPosts] User found:", user._id);
 
     const posts = await ctx.db
       .query("forumPosts")
@@ -468,25 +464,16 @@ export const getPendingPosts = query({
 export const approvePost = mutation({
   args: { postId: v.id("forumPosts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[approvePost] Starting post approval");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[approvePost] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[approvePost] User found:", user._id);
 
     const post = await ctx.db.get(args.postId);
     if (!post) {
@@ -524,25 +511,16 @@ export const rejectPost = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[rejectPost] Starting post rejection");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[rejectPost] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[rejectPost] User found:", user._id);
 
     const post = await ctx.db.get(args.postId);
     if (!post) {
@@ -578,25 +556,16 @@ export const rejectPost = mutation({
 export const hidePost = mutation({
   args: { postId: v.id("forumPosts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[hidePost] Starting post hide");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[hidePost] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[hidePost] User found:", user._id);
 
     await ctx.db.patch(args.postId, {
       status: "hidden",
@@ -612,25 +581,16 @@ export const hidePost = mutation({
 export const lockPost = mutation({
   args: { postId: v.id("forumPosts"), locked: v.boolean() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[lockPost] Starting post lock");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[lockPost] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[lockPost] User found:", user._id);
 
     await ctx.db.patch(args.postId, {
       isLocked: args.locked,
@@ -653,25 +613,16 @@ export const reportPost = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[reportPost] Starting post report");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[reportPost] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({
-        message: "User not found",
-        code: "NOT_FOUND",
-      });
-    }
+    console.log("[reportPost] User found:", user._id);
 
     const reportId = await ctx.db.insert("forumReports", {
       postId: args.postId,
@@ -690,25 +641,16 @@ export const reportPost = mutation({
 export const getReportedPosts = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getReportedPosts] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[getReportedPosts] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[getReportedPosts] User found:", user._id);
 
     const reports = await ctx.db
       .query("forumReports")
@@ -754,25 +696,16 @@ export const getReportedPosts = query({
 export const dismissReport = mutation({
   args: { reportId: v.id("forumReports") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[dismissReport] Starting report dismissal");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[dismissReport] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[dismissReport] User found:", user._id);
 
     await ctx.db.patch(args.reportId, {
       status: "dismissed",
@@ -788,19 +721,15 @@ export const dismissReport = mutation({
 export const getMyNotifications = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return [];
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getMyNotifications] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user) {
+      console.log(
+        "[getMyNotifications] User not found or not authenticated, returning empty array",
+      );
       return [];
     }
+    console.log("[getMyNotifications] User found:", user._id);
 
     const notifications = await ctx.db
       .query("notifications")
@@ -816,13 +745,16 @@ export const getMyNotifications = query({
 export const markNotificationRead = mutation({
   args: { notificationId: v.id("notifications") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    console.log("[markNotificationRead] Starting notification read");
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      console.log("[markNotificationRead] User not found or not authenticated");
       throw new ConvexError({
         message: "User not logged in",
         code: "UNAUTHENTICATED",
       });
     }
+    console.log("[markNotificationRead] User found:", user._id);
 
     await ctx.db.patch(args.notificationId, {
       isRead: true,
@@ -836,25 +768,16 @@ export const markNotificationRead = mutation({
 export const getUserForumActivity = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[getUserForumActivity] Starting query");
+    const user = await getCurrentUser(ctx);
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
+      console.log("[getUserForumActivity] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[getUserForumActivity] User found:", user._id);
 
     // Get user's posts
     const posts = await ctx.db
@@ -897,16 +820,7 @@ export const getUserForumActivity = query({
 export const getMyForumBanStatus = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return { isBanned: false };
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    const user = await getCurrentUser(ctx);
     if (!user) {
       return { isBanned: false };
     }
@@ -929,25 +843,16 @@ export const warnPost = mutation({
     postId: v.id("forumPosts"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const admin = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[warnPost] Starting post warning");
+    const admin = await getCurrentUser(ctx);
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {
+      console.log("[warnPost] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[warnPost] Admin found:", admin._id);
 
     const post = await ctx.db.get(args.postId);
     if (!post) {
@@ -1037,25 +942,16 @@ export const warnComment = mutation({
     commentId: v.id("forumComments"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const admin = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[warnComment] Starting comment warning");
+    const admin = await getCurrentUser(ctx);
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {
+      console.log("[warnComment] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[warnComment] Admin found:", admin._id);
 
     const comment = await ctx.db.get(args.commentId);
     if (!comment) {
@@ -1149,25 +1045,16 @@ export const removeForumBan = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError({
-        message: "User not logged in",
-        code: "UNAUTHENTICATED",
-      });
-    }
-
-    const admin = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email))
-      .unique();
-
+    console.log("[removeForumBan] Starting ban removal");
+    const admin = await getCurrentUser(ctx);
     if (!admin || (admin.role !== "owner" && admin.role !== "admin")) {
+      console.log("[removeForumBan] User not found or not admin");
       throw new ConvexError({
         message: "Admin access required",
         code: "FORBIDDEN",
       });
     }
+    console.log("[removeForumBan] Admin found:", admin._id);
 
     await ctx.db.patch(args.userId, {
       forumBanExpiresAt: undefined,
