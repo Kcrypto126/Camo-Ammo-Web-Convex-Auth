@@ -18,7 +18,7 @@ export default function WelcomePage() {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
-          src="https://cdn.hercules.app/file_5JpYHgTxiv7txVsQFGXP90wl"
+          src="/assets/images/file_5JpYHgTxiv7txVsQFGXP90wl.jpg"
           alt="Whitetail deer buck in natural habitat"
           className="h-full w-full object-cover object-center"
         />
