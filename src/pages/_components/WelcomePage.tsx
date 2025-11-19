@@ -22,6 +22,7 @@ export default function WelcomePage() {
           alt="Whitetail deer buck in natural habitat"
           className="h-full w-full object-cover object-center"
         />
+      {/* End of Selection */}
         {/* Orange and black overlay */}
         <div className="absolute inset-0 bg-linear-to-b from-black/70 via-orange-950/50 to-black/80" />
       </div>

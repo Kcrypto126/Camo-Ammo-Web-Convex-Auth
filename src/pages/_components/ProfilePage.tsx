@@ -389,7 +389,7 @@ export default function ProfilePage() {
   return (
     <div className="h-full overflow-y-auto bg-muted/30">
       {/* Profile Header */}
-      <div className="relative h-32 bg-gradient-to-br from-primary/20 to-primary/5">
+      <div className="relative h-32 bg-linear-to-br from-primary/20 to-primary/5">
         <div className="absolute top-4 right-4">
           <NotificationBell />
         </div>
