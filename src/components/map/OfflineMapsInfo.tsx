@@ -70,28 +70,28 @@ export default function OfflineMapsInfo({
             </h4>
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-green-600" />
                 <div>
                   <strong>GPS Location:</strong> Your device's GPS works without
                   cell service or WiFi
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-green-600" />
                 <div>
                   <strong>Track Recording:</strong> Record your trail and save
                   waypoints offline (syncs when you reconnect)
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-green-600" />
                 <div>
                   <strong>Cached Map Tiles:</strong> Previously viewed areas remain
                   visible thanks to browser caching
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <Download className="w-4 h-4 mt-0.5 flex-shrink-0 text-yellow-600" />
+                <Download className="w-4 h-4 mt-0.5 shrink-0 text-yellow-600" />
                 <div>
                   <strong>Compass:</strong> Use your device's compass to orient
                   yourself (three-finger tap on location button)
