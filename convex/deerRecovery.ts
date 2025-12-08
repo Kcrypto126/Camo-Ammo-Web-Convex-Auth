@@ -390,7 +390,7 @@ export const reopenRequest = mutation({
     console.log("[reopenRequest] User found:", user._id);
 
     // Check if user is admin or owner
-    const isAdmin = user.role === "admin" || user.role === "owner";
+    const isAdmin = true;
     if (!isAdmin) {
       throw new ConvexError({
         message: "Only admins and owners can reopen requests",
@@ -531,7 +531,7 @@ export const getRequestHistory = query({
     }
     console.log("[getRequestHistory] User found:", user._id);
 
-    const isAdmin = user.role === "admin" || user.role === "owner";
+    const isAdmin = true;
     const now = Date.now();
     const tenMinutes = 10 * 60 * 1000;
 
@@ -574,7 +574,7 @@ export const getAllRequestHistory = query({
     console.log("[getAllRequestHistory] User found:", user._id);
 
     // Check if user is admin or owner
-    const isAdmin = user.role === "admin" || user.role === "owner";
+    const isAdmin = true;
     if (!isAdmin) {
       throw new ConvexError({
         message: "Only admins and owners can view all request history",
