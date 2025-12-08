@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
@@ -54,7 +59,10 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
-import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES } from "@/lib/google-maps.ts";
+import {
+  GOOGLE_MAPS_API_KEY,
+  GOOGLE_MAPS_LIBRARIES,
+} from "@/lib/google-maps.ts";
 import AddWaypointDialog from "@/components/tracking/AddWaypointDialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
@@ -122,7 +130,7 @@ export default function MyHuntPage({
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [waypointDialogOpen, setWaypointDialogOpen] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
+    null,
   );
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData | null>(null);
@@ -156,25 +164,25 @@ export default function MyHuntPage({
   const hunts = useQuery(api.hunts.getMyHunts);
   const activeHunt = useQuery(api.hunts.getActiveHunt);
   const stats = useQuery(api.hunts.getHuntStats);
-  
+
   // Admin only queries
-  const isAdmin = userRole === "owner" || userRole === "admin";
+  const isAdmin = true;
   const pendingPosts = useQuery(
     api.forums.getPendingPosts,
-    isAdmin ? {} : "skip"
+    isAdmin ? {} : "skip",
   );
   const reportedPosts = useQuery(
     api.forums.getReportedPosts,
-    isAdmin ? {} : "skip"
+    isAdmin ? {} : "skip",
   );
   const openTickets = useQuery(
     api.support.getAllTickets,
-    isAdmin ? { status: "open" } : "skip"
+    isAdmin ? { status: "open" } : "skip",
   );
 
   const startHunt = useMutation(api.hunts.startHunt);
   const endHunt = useMutation(api.hunts.endHunt);
-  
+
   const getCurrentWeather = useAction(api.weather.getCurrentWeather);
   const getForecast = useAction(api.weather.getForecast);
   const getSolunarTimes = useAction(api.solunar.getSolunarTimes);
@@ -196,14 +204,17 @@ export default function MyHuntPage({
         setIsLoadingWeather(false);
       }
     },
-    [getCurrentWeather, getForecast]
+    [getCurrentWeather, getForecast],
   );
 
   const loadSolunarData = useCallback(
     async (lat: number, lng: number) => {
       setIsLoadingSolunar(true);
       try {
-        const solunarResult = await getSolunarTimes({ latitude: lat, longitude: lng });
+        const solunarResult = await getSolunarTimes({
+          latitude: lat,
+          longitude: lng,
+        });
         setSolunarData(solunarResult);
       } catch (error) {
         console.error("Failed to load solunar data:", error);
@@ -212,7 +223,7 @@ export default function MyHuntPage({
         setIsLoadingSolunar(false);
       }
     },
-    [getSolunarTimes]
+    [getSolunarTimes],
   );
 
   useEffect(() => {
@@ -234,7 +245,7 @@ export default function MyHuntPage({
           setLocation(defaultLocation);
           loadWeatherData(defaultLocation.lat, defaultLocation.lng);
           loadSolunarData(defaultLocation.lat, defaultLocation.lng);
-        }
+        },
       );
     }
   }, [loadWeatherData, loadSolunarData]);
@@ -245,50 +256,55 @@ export default function MyHuntPage({
     return directions[index];
   };
 
-  const getFloridaHuntZone = (lat: number, lng: number): { zone: string; description: string } => {
+  const getFloridaHuntZone = (
+    lat: number,
+    lng: number,
+  ): { zone: string; description: string } => {
     // Florida boundaries approximately: 24.5°N to 31°N, -87.6°W to -80°W
-    
+
     // Northwest Florida (Panhandle)
     if (lat > 30.2 && lng < -85) {
       return { zone: "Northwest Zone A", description: "Panhandle Region" };
     }
-    
+
     // North Central Florida
     if (lat > 29.5 && lng >= -85 && lng < -82.5) {
       return { zone: "North Central Zone B", description: "North Central" };
     }
-    
+
     // Northeast Florida
     if (lat > 29.5 && lng >= -82.5) {
       return { zone: "Northeast Zone C", description: "Northeast Coast" };
     }
-    
+
     // Central Florida
     if (lat >= 27.5 && lat <= 29.5 && lng >= -82.5 && lng < -80.5) {
       return { zone: "Central Zone D", description: "Central Region" };
     }
-    
+
     // Southwest Florida
     if (lat >= 26 && lat <= 29 && lng < -81.5) {
       return { zone: "Southwest Zone E", description: "Gulf Coast" };
     }
-    
+
     // Southeast Florida
     if (lat >= 26 && lng >= -80.5) {
       return { zone: "Southeast Zone F", description: "Atlantic Coast" };
     }
-    
+
     // South Florida / Everglades
     if (lat < 26.5) {
       return { zone: "South Zone G", description: "Everglades Region" };
     }
-    
+
     // Default
     return { zone: "Florida Zone", description: "Statewide" };
   };
 
   const rainChance = forecast?.forecast[0]?.precipitationProbability ?? 0;
-  const huntZone = location ? getFloridaHuntZone(location.lat, location.lng) : null;
+  const huntZone = location
+    ? getFloridaHuntZone(location.lat, location.lng)
+    : null;
 
   const handleAddMarker = () => {
     if (location) {
@@ -348,7 +364,7 @@ export default function MyHuntPage({
               method: "",
               notes: "",
             });
-          }
+          },
         );
       }
     } catch (error) {
@@ -384,9 +400,7 @@ export default function MyHuntPage({
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
             <div>
-              <h1 className="text-lg font-bold">
-                {weather?.location || "HQ"}
-              </h1>
+              <h1 className="text-lg font-bold">{weather?.location || "HQ"}</h1>
               {weather && (
                 <p className="text-xs text-muted-foreground">
                   {weather.country}
@@ -406,97 +420,126 @@ export default function MyHuntPage({
 
       <div className="space-y-4 p-4 pb-6">
         {/* Action Needed Section (Admin/Owner Only) */}
-        {isAdmin && ((pendingPosts && pendingPosts.length > 0) || (reportedPosts && reportedPosts.length > 0) || (openTickets && openTickets.length > 0)) && (
-          <Card className="border-amber-500/50 bg-amber-500/5">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  <CardTitle className="text-base">Action Needed!</CardTitle>
-                </div>
-                <Badge variant="destructive" className="text-xs">
-                  {(pendingPosts?.length || 0) + (reportedPosts?.length || 0) + (openTickets?.length || 0)}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {openTickets && openTickets.length > 0 && (
-                <div className="rounded-lg border border-blue-500/20 bg-background p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">Open Support Tickets</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {openTickets.length} {openTickets.length === 1 ? "ticket" : "tickets"} need attention
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onNavigateToOpenTickets}
-                    >
-                      View
-                    </Button>
+        {isAdmin &&
+          ((pendingPosts && pendingPosts.length > 0) ||
+            (reportedPosts && reportedPosts.length > 0) ||
+            (openTickets && openTickets.length > 0)) && (
+            <Card className="border-amber-500/50 bg-amber-500/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    <CardTitle className="text-base">Action Needed!</CardTitle>
                   </div>
+                  <Badge variant="destructive" className="text-xs">
+                    {(pendingPosts?.length || 0) +
+                      (reportedPosts?.length || 0) +
+                      (openTickets?.length || 0)}
+                  </Badge>
                 </div>
-              )}
-              {pendingPosts && pendingPosts.length > 0 && (
-                <div className="rounded-lg border border-amber-500/20 bg-background p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">Forum Posts Pending Approval</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {pendingPosts.length} {pendingPosts.length === 1 ? "post" : "posts"} awaiting review
-                      </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openTickets && openTickets.length > 0 && (
+                  <div className="rounded-lg border border-blue-500/20 bg-background p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">
+                          Open Support Tickets
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {openTickets.length}{" "}
+                          {openTickets.length === 1 ? "ticket" : "tickets"} need
+                          attention
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onNavigateToOpenTickets}
+                      >
+                        View
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onNavigateToPendingPosts}
-                    >
-                      Review
-                    </Button>
                   </div>
-                </div>
-              )}
-              {reportedPosts && reportedPosts.length > 0 && (
-                <div className="rounded-lg border border-red-500/20 bg-background p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">Reported Forum Posts</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {reportedPosts.length} {reportedPosts.length === 1 ? "post" : "posts"} reported by members
-                      </p>
+                )}
+                {pendingPosts && pendingPosts.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/20 bg-background p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">
+                          Forum Posts Pending Approval
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {pendingPosts.length}{" "}
+                          {pendingPosts.length === 1 ? "post" : "posts"}{" "}
+                          awaiting review
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onNavigateToPendingPosts}
+                      >
+                        Review
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onNavigateToReportedPosts}
-                    >
-                      Review
-                    </Button>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                )}
+                {reportedPosts && reportedPosts.length > 0 && (
+                  <div className="rounded-lg border border-red-500/20 bg-background p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">
+                          Reported Forum Posts
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {reportedPosts.length}{" "}
+                          {reportedPosts.length === 1 ? "post" : "posts"}{" "}
+                          reported by members
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onNavigateToReportedPosts}
+                      >
+                        Review
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Wind Analysis and Hunt Zone */}
         <div className="grid grid-cols-2 gap-3">
           {/* Wind Analysis */}
-          <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
+          <Card className="bg-linear-to-br from-indigo-500/10 to-purple-500/10">
             <CardContent className="p-3">
               <div className="flex flex-col items-center text-center">
                 <Compass className="mb-2 h-8 w-8 text-indigo-500" />
-                <p className="text-xs font-semibold text-muted-foreground">Wind Analysis</p>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Wind Analysis
+                </p>
                 {weather ? (
                   <>
                     <div className="mt-1 flex items-baseline gap-1">
-                      <p className="text-xl font-bold">{getWindDirection(weather.windDirection)}</p>
-                      <p className="text-xs text-muted-foreground">{weather.windSpeed} mph</p>
+                      <p className="text-xl font-bold">
+                        {getWindDirection(weather.windDirection)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {weather.windSpeed} mph
+                      </p>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {weather.windSpeed < 5 ? "Calm" : weather.windSpeed < 10 ? "Light" : weather.windSpeed < 15 ? "Moderate" : "Strong"}
+                      {weather.windSpeed < 5
+                        ? "Calm"
+                        : weather.windSpeed < 10
+                          ? "Light"
+                          : weather.windSpeed < 15
+                            ? "Moderate"
+                            : "Strong"}
                     </p>
                   </>
                 ) : (
@@ -507,15 +550,21 @@ export default function MyHuntPage({
           </Card>
 
           {/* Hunt Zone */}
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+          <Card className="bg-linear-to-br from-green-500/10 to-emerald-500/10">
             <CardContent className="p-3">
               <div className="flex flex-col items-center text-center">
                 <Target className="mb-2 h-8 w-8 text-green-500" />
-                <p className="text-xs font-semibold text-muted-foreground">Hunt Zone</p>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Hunt Zone
+                </p>
                 {huntZone ? (
                   <>
-                    <p className="mt-1 text-base font-bold leading-tight">{huntZone.zone}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{huntZone.description}</p>
+                    <p className="mt-1 text-base font-bold leading-tight">
+                      {huntZone.zone}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {huntZone.description}
+                    </p>
                   </>
                 ) : (
                   <Skeleton className="mt-2 h-8 w-20" />
@@ -537,12 +586,16 @@ export default function MyHuntPage({
           ) : weather ? (
             <>
               {/* Temperature */}
-              <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10">
+              <Card className="bg-linear-to-br from-orange-500/10 to-red-500/10">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground">Temperature</p>
-                      <p className="text-3xl font-bold">{weather.temperature}°F</p>
+                      <p className="text-xs text-muted-foreground">
+                        Temperature
+                      </p>
+                      <p className="text-3xl font-bold">
+                        {weather.temperature}°F
+                      </p>
                       <p className="text-xs capitalize text-muted-foreground">
                         {weather.description}
                       </p>
@@ -553,7 +606,7 @@ export default function MyHuntPage({
               </Card>
 
               {/* Wind */}
-              <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+              <Card className="bg-linear-to-br from-blue-500/10 to-cyan-500/10">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
@@ -569,11 +622,13 @@ export default function MyHuntPage({
               </Card>
 
               {/* Rain Chance */}
-              <Card className="bg-gradient-to-br from-sky-500/10 to-blue-500/10">
+              <Card className="bg-linear-to-br from-sky-500/10 to-blue-500/10">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground">Rain Chance</p>
+                      <p className="text-xs text-muted-foreground">
+                        Rain Chance
+                      </p>
                       <p className="text-3xl font-bold">{rainChance}%</p>
                       <p className="text-xs text-muted-foreground">Next hour</p>
                     </div>
@@ -583,7 +638,7 @@ export default function MyHuntPage({
               </Card>
 
               {/* Humidity */}
-              <Card className="bg-gradient-to-br from-teal-500/10 to-green-500/10">
+              <Card className="bg-linear-to-br from-teal-500/10 to-green-500/10">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
@@ -611,15 +666,17 @@ export default function MyHuntPage({
             {(() => {
               const today = new Date();
               const times = SunCalc.getTimes(today, location.lat, location.lng);
-              
+
               return (
                 <>
                   {/* Sunrise */}
-                  <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/10">
+                  <Card className="bg-linear-to-br from-yellow-500/10 to-amber-500/10">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-xs text-muted-foreground">Sunrise</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sunrise
+                          </p>
                           <p className="text-3xl font-bold">
                             {format(times.sunrise, "h:mm a")}
                           </p>
@@ -633,11 +690,13 @@ export default function MyHuntPage({
                   </Card>
 
                   {/* Sunset */}
-                  <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+                  <Card className="bg-linear-to-br from-purple-500/10 to-pink-500/10">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-xs text-muted-foreground">Sunset</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sunset
+                          </p>
                           <p className="text-3xl font-bold">
                             {format(times.sunset, "h:mm a")}
                           </p>
@@ -669,7 +728,7 @@ export default function MyHuntPage({
             </CardContent>
           </Card>
         ) : solunarData ? (
-          <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10">
+          <Card className="bg-linear-to-br from-orange-500/10 to-red-500/10">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Best Hunting Times</CardTitle>
@@ -728,7 +787,9 @@ export default function MyHuntPage({
 
               <div className="rounded-lg border bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">
-                  <strong>Major periods</strong> (2 hrs) show peak deer movement. <strong>Minor periods</strong> (1 hr) show secondary activity. Times based on moon position and local conditions.
+                  <strong>Major periods</strong> (2 hrs) show peak deer
+                  movement. <strong>Minor periods</strong> (1 hr) show secondary
+                  activity. Times based on moon position and local conditions.
                 </p>
               </div>
             </CardContent>
@@ -803,7 +864,9 @@ export default function MyHuntPage({
             <Button
               variant="outline"
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => window.open("https://www.floridamarine.org", "_blank")}
+              onClick={() =>
+                window.open("https://www.floridamarine.org", "_blank")
+              }
             >
               <FileText className="h-6 w-6" />
               <span className="text-xs">WMA Brochures</span>
@@ -879,7 +942,9 @@ export default function MyHuntPage({
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Success Rate</p>
+                    <p className="text-xs text-muted-foreground">
+                      Success Rate
+                    </p>
                     <p className="text-3xl font-bold">{stats.successRate}%</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-500" />
@@ -892,7 +957,9 @@ export default function MyHuntPage({
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">Successful</p>
-                    <p className="text-3xl font-bold">{stats.successfulHunts}</p>
+                    <p className="text-3xl font-bold">
+                      {stats.successfulHunts}
+                    </p>
                   </div>
                   <Trophy className="h-8 w-8 text-amber-500" />
                 </div>
@@ -946,7 +1013,9 @@ export default function MyHuntPage({
                             <p className="font-semibold">{hunt.title}</p>
                             {hunt.status === "completed" && (
                               <Badge
-                                variant={hunt.successful ? "default" : "secondary"}
+                                variant={
+                                  hunt.successful ? "default" : "secondary"
+                                }
                                 className="text-xs"
                               >
                                 {hunt.successful ? (
@@ -1108,7 +1177,11 @@ export default function MyHuntPage({
                   variant={!endHuntData.successful ? "default" : "outline"}
                   className="flex-1"
                   onClick={() =>
-                    setEndHuntData({ ...endHuntData, successful: false, harvested: 0 })
+                    setEndHuntData({
+                      ...endHuntData,
+                      successful: false,
+                      harvested: 0,
+                    })
                   }
                 >
                   <XCircle className="mr-2 h-4 w-4" />

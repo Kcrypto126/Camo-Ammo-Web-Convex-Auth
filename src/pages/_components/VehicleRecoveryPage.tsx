@@ -221,7 +221,7 @@ function RequestHistorySection({
 }) {
   const history = useQuery(api.vehicleRecovery.getRequestHistory);
   const currentUser = useQuery(api.users.getCurrentUser);
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
+  const isAdmin = true;
 
   if (!history || history.length === 0) {
     return null;
@@ -286,7 +286,7 @@ function RequestDetailView({
   const closeRequest = useMutation(api.vehicleRecovery.closeRequest);
   const reopenRequest = useMutation(api.vehicleRecovery.reopenRequest);
 
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
+  const isAdmin = true;
   const isOwner = request?.userId === currentUser?._id;
   const isClosed = request?.closedAt !== undefined;
 

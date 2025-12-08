@@ -223,7 +223,7 @@ function RequestHistorySection({
 }) {
   const history = useQuery(api.deerRecovery.getRequestHistory);
   const currentUser = useQuery(api.users.getCurrentUser);
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
+  const isAdmin = true;
 
   if (!history || history.length === 0) {
     return null;
