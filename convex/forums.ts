@@ -70,7 +70,7 @@ export const getPosts = query({
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    const isAdmin = true;
+    const isAdmin = user?.role === "owner" || user?.role === "admin";
 
     // Build query based on filters
     let postsQuery;
@@ -396,7 +396,7 @@ export const deletePost = mutation({
     }
 
     // Check if user is admin or post author
-    const isAdmin = true;
+    const isAdmin = user.role === "owner" || user.role === "admin";
     const isAuthor = post.authorId === user._id;
 
     if (!isAdmin && !isAuthor) {

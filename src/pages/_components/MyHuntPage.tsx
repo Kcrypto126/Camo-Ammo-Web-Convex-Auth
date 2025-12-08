@@ -166,7 +166,7 @@ export default function MyHuntPage({
   const stats = useQuery(api.hunts.getHuntStats);
 
   // Admin only queries
-  const isAdmin = true;
+  const isAdmin = userRole === "owner" || userRole === "admin";
   const pendingPosts = useQuery(
     api.forums.getPendingPosts,
     isAdmin ? {} : "skip",
