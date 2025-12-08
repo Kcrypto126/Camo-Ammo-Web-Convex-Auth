@@ -1,7 +1,34 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel.d.ts";
+import { mutation, query } from "./_generated/server";
+
+// Super admin email from environment variable
+const SUPER_ADMIN_EMAIL =
+  process.env.SUPER_ADMIN_EMAIL ?? "rex@diazcorporations.com";
+
+// Default permissions for each role
+const DEFAULT_PERMISSIONS = {
+  owner: [
+    "view_users",
+    "edit_users",
+    "delete_users",
+    "ban_users",
+    "manage_roles",
+    "moderate_forums",
+    "moderate_marketplace",
+    "manage_subscriptions",
+    "view_analytics",
+  ],
+  admin: [
+    "view_users",
+    "edit_users",
+    "ban_users",
+    "moderate_forums",
+    "moderate_marketplace",
+    "view_analytics",
+  ],
+  member: [],
+};
 
 export const getMyProfile = query({
   args: {},
@@ -49,7 +76,7 @@ export const getMyProfile = query({
     // This allows the frontend to handle the case where user creation is in progress
     console.log(
       "[getMyProfile] User not found in database yet, waiting for user creation",
-      { email: identity.email, subject: identity.subject },
+      { email: identity.email, subject: identity.subject }
     );
     return null;
   },
@@ -93,21 +120,21 @@ export const updateProfile = mutation({
         name: v.string(),
         phone: v.string(),
         relationship: v.string(),
-      }),
+      })
     ),
     emergencyContact2: v.optional(
       v.object({
         name: v.string(),
         phone: v.string(),
         relationship: v.string(),
-      }),
+      })
     ),
     emergencyContact3: v.optional(
       v.object({
         name: v.string(),
         phone: v.string(),
         relationship: v.string(),
-      }),
+      })
     ),
     huntingPreferences: v.optional(v.array(v.string())),
     weaponTypes: v.optional(v.array(v.string())),
@@ -190,6 +217,16 @@ export const updateProfile = mutation({
     if (args.hobbies !== undefined) updates.hobbies = args.hobbies;
     if (args.profileCompleted !== undefined)
       updates.profileCompleted = args.profileCompleted;
+
+    // Determine and set role based on email
+    // If user email matches SUPER_ADMIN_EMAIL, set role to admin, otherwise member
+    const userEmail = identity.email || user.email;
+    if (userEmail) {
+      const role = userEmail === SUPER_ADMIN_EMAIL ? "owner" : "member";
+      const permissions = DEFAULT_PERMISSIONS[role];
+      updates.role = role;
+      updates.permissions = permissions;
+    }
 
     await ctx.db.patch(user._id, updates);
 
